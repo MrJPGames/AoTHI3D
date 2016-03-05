@@ -8,7 +8,6 @@
 Bullet::Bullet(){
 	isAlive=0;
 	direction=0;
-	aim_direction=90;
 	max_speed=2.5;
 	speed=0;
 	x=0;
@@ -43,8 +42,8 @@ void Bullet::setDirection(int dir){
 }
 
 void Bullet::update(){
-	y-=round(speed*cos(direction*(PI/180)));
-	x+=round(speed*sin(direction*(PI/180)));
+	y-=speed*cos(direction*(PI/180));
+	x+=speed*sin(direction*(PI/180));
 	if (x > WIDTH+8){
 		kill();
 	}else if (x < -8){
@@ -57,12 +56,12 @@ void Bullet::update(){
 	}
 }
 
-float Bullet::getX(){
-	return x;
+int Bullet::getX(){
+	return round(x);
 }
 
-float Bullet::getY(){
-	return y;
+int Bullet::getY(){
+	return round(y);
 }
 
 bool Bullet::getAlive(){

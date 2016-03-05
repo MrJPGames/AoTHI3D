@@ -10,7 +10,6 @@
 Object::Object(){
 	isAlive=0;
 	direction=0;
-	aim_direction=90;
 	speed=0;
 	x=0;
 	y=0;
@@ -58,8 +57,8 @@ void Object::setDirection(int dir){
 }
 
 void Object::update(){
-	y-=round(speed*cos(direction*(PI/180)));
-	x+=round(speed*sin(direction*(PI/180)));
+	y-=speed*cos(direction*(PI/180));
+	x+=speed*sin(direction*(PI/180));
 	angle+=2*PI/180;
 	if (x > WIDTH+32){
 		kill();
@@ -73,12 +72,12 @@ void Object::update(){
 	}
 }
 
-float Object::getX(){
-	return x;
+int Object::getX(){
+	return round(x);
 }
 
-float Object::getY(){
-	return y;
+int Object::getY(){
+	return round(y);
 }
 
 bool Object::getAlive(){

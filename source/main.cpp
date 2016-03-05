@@ -98,14 +98,14 @@ void spawn(int side){
 			objects[i].resurect();
 			objects[i].setPos(x, y);
 			objects[i].setSpeed(1 + static_cast <float> (rand()) / static_cast <float> (RAND_MAX));
-			objects[i].setScale(0.5 + static_cast <float> (rand()) / static_cast <float> (RAND_MAX));
+			objects[i].setScale(0.75 + static_cast <float> (rand()) / static_cast <float> (RAND_MAX/0.5));
 			float xDiff = player.getX() - x;
 			float yDiff = player.getY() - y;
 			double angle=atan2(xDiff, -yDiff) * (180/PI);
 			if (angle < 0){
-				objects[i].setDirection(360+angle);
+				objects[i].setDirection(360+angle-4+rand() % 9);
 			}else{
-				objects[i].setDirection(angle);
+				objects[i].setDirection(angle-4+rand() % 9);
 			}
 			i=50;
 		}
@@ -223,7 +223,7 @@ void shoot(){
 			bullets[i].resurect();
 			bullets[i].setPos(player.getX(), player.getY());
 			bullets[i].setSpeed(2);
-			bullets[i].setDirection(player.getAim());
+			bullets[i].setDirection(player.getAim()-2+rand() % 5);
 			i=30;
 			canShoot=0;
 			shootTimer=shootTimerMax;
@@ -256,6 +256,7 @@ int main(int argc, char **argv)
 	player.setPos(200,120);
 	float speed=0;
 	int dx,dy,c_dx,c_dy,t_dx,t_dy;
+	bool up,down,left,right;
 
 	//TODO: remove!
 	int obs,buls,efs,tsts; //DEBUG STUFF
@@ -287,6 +288,32 @@ int main(int argc, char **argv)
 				player.setDirection(atan2(dx, dy) * (180/PI));
 			}else{
 				player.setDirection(360 + (atan2(dx, dy) * (180/PI)));
+			}
+		}else{
+			up=kHeld & KEY_UP || kHeld & KEY_X; //Allow for right and left handed play!
+			down=kHeld & KEY_DOWN || kHeld & KEY_B;
+			left=kHeld & KEY_LEFT || kHeld & KEY_Y;
+			right=kHeld & KEY_RIGHT || kHeld & KEY_A;
+			if (down){
+				player.setSpeed(1);
+				player.setDirection(180);
+				if (right)
+					player.setDirection(135);
+				if (left)
+					player.setDirection(225);
+			}else if (up){
+				player.setSpeed(1);
+				player.setDirection(0);
+				if (right)
+					player.setDirection(45);
+				if (left)
+					player.setDirection(315);
+			}else if (left){
+				player.setSpeed(1);
+				player.setDirection(270);
+			}else if (right){
+				player.setSpeed(1);
+				player.setDirection(90);
 			}
 		}
 		if (abs(c_dx) > deadzone || abs(c_dy) > deadzone){

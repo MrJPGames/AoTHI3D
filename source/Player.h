@@ -10,8 +10,8 @@ class Player{
 		void setDirection(int dir);
 		void setAim(int dir);
 		void update();
-		float getX();
-		float getY();
+		int getX();
+		int getY();
 		int getAim();
 		int getLives();
 		bool takeDamage();
@@ -22,8 +22,8 @@ class Player{
 		float max_speed;
 		float speed;
 		int lives;
-		int x;
-		int y;
+		float x;
+		float y;
 };
 
 #endif

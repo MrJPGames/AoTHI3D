@@ -11,19 +11,18 @@ class Bullet{
 		void update();
 		void kill();
 		void resurect();
-		float getX();
-		float getY();
+		int getX();
+		int getY();
 		float getAngleInRads();
 		bool getAlive();
 		int getType();
 	private:
 		bool isAlive;
 		int direction;
-		int aim_direction;
 		float max_speed;
 		float speed;
-		int x;
-		int y;
+		float x;
+		float y;
 		int type;
 };
 

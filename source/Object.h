@@ -11,8 +11,8 @@ class Object{
 		void update();
 		void kill();
 		void resurect();
-		float getX();
-		float getY();
+		int getX();
+		int getY();
 		float getAngle();
 		bool getAlive();
 		float getScale();
@@ -22,15 +22,14 @@ class Object{
 	private:
 		bool isAlive;
 		float direction;
-		int aim_direction;
 		float max_speed;
 		float speed;
 		float angle;
 		float scale;
 		int rot_dir;
 		int type;
-		int x;
-		int y;
+		float x;
+		float y;
 		int special;
 };
 

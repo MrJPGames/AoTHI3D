@@ -36,8 +36,8 @@ void Player::setAim(int dir){
 }
 
 void Player::update(){
-	y-=round(speed*cos(direction*(PI/180)));
-	x+=round(speed*sin(direction*(PI/180)));
+	y-=speed*cos(direction*(PI/180));
+	x+=speed*sin(direction*(PI/180));
 	if (x > WIDTH){
 		x=x-WIDTH;
 	}else if (x < 0){
@@ -60,11 +60,11 @@ bool Player::takeDamage(){
 	}
 }
 
-float Player::getX(){
+int Player::getX(){
 	return x;
 }
 
-float Player::getY(){
+int Player::getY(){
 	return y;
 }
 
