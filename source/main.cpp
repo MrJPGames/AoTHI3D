@@ -6,11 +6,12 @@
 #include <stdlib.h>
 #include <cstdlib> //For rand
 #include <math.h>
-#include "Player.h"
-#include "Bullet.h"
-#include "Object.h"
-#include "Effect.h"
-#include "Trail.h"
+#include "Objects\Player.h"
+#include "Objects\Bullet.h"
+#include "Objects\Object.h"
+#include "Objects\Effect.h"
+#include "Objects\Trail.h"
+#include "Song.h"
 
 #include "OpenSans_ttf.h"
 #define PI 3.14159265
@@ -42,6 +43,8 @@ int diffTimerMin=60*10;
 
 int score=0;
 int itemsDestroyed=0;
+
+Song bgm;
 
 
 void restart(){
@@ -251,6 +254,8 @@ int main(int argc, char **argv)
 
 	sftd_init();
 	sftd_font *font = sftd_load_font_mem(OpenSans_ttf, OpenSans_ttf_size);
+
+	bgm.initSong("romfs:/bgm/cut_the_cheese.mp3");  //No need to set channel as 1 is default and that's the channel we are going to use for the bgm
 
 	// Main loop
 	player.setPos(200,120);

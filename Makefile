@@ -28,7 +28,7 @@ include $(DEVKITARM)/3ds_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	AoTHI
 BUILD		:=	build
-SOURCES		:=	source source/textures
+SOURCES		:=	source source/Objects
 DATA		:=	data
 INCLUDES	:=	include
 ROMFS		:=	romfs
