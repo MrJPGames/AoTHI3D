@@ -8,7 +8,7 @@
 class AudioFX{
 	public:
 		AudioFX();
-		void setChannel(int var1);
+		void setChannel(int var1, int var2);
 		bool initSfx(const char* name);
 		void play();
 		int fullChns();

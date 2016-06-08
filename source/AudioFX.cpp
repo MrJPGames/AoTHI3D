@@ -3,7 +3,8 @@
 AudioFX::AudioFX(){
 }
 
-void AudioFX::setChannel(int var1){
+void AudioFX::setChannel(int var1, int var2){
+    channel_range=var2;
     for (int i=0; i<channel_range; i++){
         ndspChnWaveBufClear(channel[i]);
         channel[i]=var1+i;

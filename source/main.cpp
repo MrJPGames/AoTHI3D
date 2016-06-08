@@ -12,6 +12,7 @@
 #include "Objects\Effect.h"
 #include "Objects\Trail.h"
 #include "Song.h"
+#include "AudioFX.h"
 
 #include "OpenSans_ttf.h"
 #define PI 3.14159265
@@ -46,6 +47,8 @@ int itemsDestroyed=0;
 
 Song bgm;
 
+AudioFX sfx_shoot;
+AudioFX sfx_explosion;
 
 void restart(){
 	int x;
@@ -173,6 +176,8 @@ void update(){
 						bullets[i].kill();
 						spawnEffect(x1,y1, objects[j].getScale());
 						objects[j].kill();
+						//Explosion sfx
+						sfx_explosion.play();
 						score+=100;
 						itemsDestroyed+=1;
 						j=50; //Bullet can only hit 1 object
@@ -194,6 +199,8 @@ void update(){
 			if (dist < 10+o_size){
 				spawnEffect(x1,y1, objects[j].getScale());
 				objects[j].kill();
+				//Play explosion sfx
+				sfx_explosion.play();
 				if (player.takeDamage())
 					restart();
 			}
@@ -230,6 +237,8 @@ void shoot(){
 			i=30;
 			canShoot=0;
 			shootTimer=shootTimerMax;
+			//Play shoot sfx
+			sfx_shoot.play();
 		}
 	}
 }
@@ -242,6 +251,11 @@ int main(int argc, char **argv)
 	//Initialize the sf2d lib
 	sf2d_init();
 	romfsInit();
+	//Initialize ndsp
+	ndspInit();
+
+	ndspSetOutputMode(NDSP_OUTPUT_STEREO);
+	ndspSetOutputCount(3); // Num of buffers
 	//Set the background color
 	sf2d_set_clear_color(RGBA8(0x40, 0x40, 0x40, 0xFF));
 
@@ -256,6 +270,10 @@ int main(int argc, char **argv)
 	sftd_font *font = sftd_load_font_mem(OpenSans_ttf, OpenSans_ttf_size);
 
 	bgm.initSong("romfs:/bgm/cut_the_cheese.mp3");  //No need to set channel as 1 is default and that's the channel we are going to use for the bgm
+	sfx_shoot.setChannel(2,5);
+	sfx_explosion.setChannel(8,8);
+	sfx_shoot.initSfx("romfs:/sfx/shoot.wav");
+	sfx_explosion.initSfx("romfs:/sfx/explosion.wav");
 
 	// Main loop
 	player.setPos(200,120);
@@ -276,6 +294,10 @@ int main(int argc, char **argv)
 		u32 kDown = hidKeysDown();
 		u32 kHeld = hidKeysHeld();
 		u32 kUp = hidKeysUp();
+
+
+		if (kDown & KEY_ZR)
+			bgm.play();
 
 		score+=1;
 		player.setSpeed(0);
@@ -425,5 +447,6 @@ int main(int argc, char **argv)
 	sftd_free_font(font);
 	sftd_fini();
 	sf2d_fini();
+	ndspExit();
 	return 0;
 }
