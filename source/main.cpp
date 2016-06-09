@@ -269,7 +269,7 @@ int main(int argc, char **argv)
 	sftd_init();
 	sftd_font *font = sftd_load_font_mem(OpenSans_ttf, OpenSans_ttf_size);
 
-	bgm.initSong("romfs:/bgm/cut_the_cheese.mp3");  //No need to set channel as 1 is default and that's the channel we are going to use for the bgm
+	bgm.initSong("romfs:/bgm/cut_the_check.wav");  //No need to set channel as 1 is default and that's the channel we are going to use for the bgm
 	sfx_shoot.setChannel(2,5);
 	sfx_explosion.setChannel(8,8);
 	sfx_shoot.initSfx("romfs:/sfx/shoot.wav");
@@ -284,6 +284,8 @@ int main(int argc, char **argv)
 	//TODO: remove!
 	int obs,buls,efs,tsts; //DEBUG STUFF
 
+	bgm.play();
+
 	while (aptMainLoop()){
 		//Scan all the inputs. This should be done once for each frame
 		hidScanInput();
@@ -294,10 +296,6 @@ int main(int argc, char **argv)
 		u32 kDown = hidKeysDown();
 		u32 kHeld = hidKeysHeld();
 		u32 kUp = hidKeysUp();
-
-
-		if (kDown & KEY_ZR)
-			bgm.play();
 
 		score+=1;
 		player.setSpeed(0);

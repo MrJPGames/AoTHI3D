@@ -85,7 +85,7 @@ bool Song::initSong(const char* name){
     memset(&waveBuf, 0, sizeof(waveBuf));
   
     waveBuf.data_vaddr = (const void*)data;
-    waveBuf.nsamples = dataSize / (bitsPerSample >> 2);
+    waveBuf.nsamples = dataSize / (bitsPerSample >> 3);
     waveBuf.looping = true; // Loop enabled
     waveBuf.status = NDSP_WBUF_FREE;
     DSP_FlushDataCache(data, dataSize);
@@ -93,10 +93,8 @@ bool Song::initSong(const char* name){
 }
 
 void Song::play(){
-    if (!ndspChnIsPlaying(channel)){
-        ndspChnWaveBufClear(channel);
-        ndspChnWaveBufAdd(channel, &waveBuf);
-    }
+    ndspChnWaveBufClear(channel);
+    ndspChnWaveBufAdd(channel, &waveBuf);
 }
 
 int Song::getChannel(){
