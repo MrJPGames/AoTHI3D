@@ -7,7 +7,9 @@ class Player{
 		Player(int x, int y);
 		void setPos(int x, int y);
 		void setSpeed(float speed);
+		float getSpeed();
 		void setDirection(int dir);
+		int getDirection();
 		void setAim(int dir);
 		void update();
 		int getX();

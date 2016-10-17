@@ -41,6 +41,10 @@ void Bullet::setDirection(int dir){
 	direction=dir;
 }
 
+int Bullet::getDirection(){
+	return direction;
+}
+
 void Bullet::update(){
 	y-=speed*cos(direction*(PI/180));
 	x+=speed*sin(direction*(PI/180));

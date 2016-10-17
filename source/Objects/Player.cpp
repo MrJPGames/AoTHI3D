@@ -27,8 +27,16 @@ void Player::setSpeed(float var1){
 	speed=var1*max_speed;
 }
 
+float Player::getSpeed(){
+	return speed;
+}
+
 void Player::setDirection(int dir){
 	direction=dir;
+}
+
+int Player::getDirection(){
+	return direction;
 }
 
 void Player::setAim(int dir){

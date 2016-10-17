@@ -43,13 +43,13 @@ int Effect::getType(){
 }
 
 int Effect::getFrame(){
-	return frame/framerate;
+	return (int)(frame/framerate);
 }
 
 void Effect::update(){
 	if (active){
 		frame+=1;
-		if (floor(frame/framerate) > frames){
+		if (ceil(frame/framerate) > frames){
 			kill();
 		}
 	}

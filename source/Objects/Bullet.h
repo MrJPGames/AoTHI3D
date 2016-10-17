@@ -16,6 +16,7 @@ class Bullet{
 		float getAngleInRads();
 		bool getAlive();
 		int getType();
+		int getDirection();
 	private:
 		bool isAlive;
 		int direction;
