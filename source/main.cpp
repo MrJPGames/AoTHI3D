@@ -19,6 +19,7 @@
 #include "AudioFX.h"
 
 #include "SaveManager.h"
+#include "Online.h"
 
 #include "OpenSans_ttf.h"
 #define PI 3.14159265
@@ -78,6 +79,7 @@ int SONG_AMOUNT = 5;
 bool spawnEffectPlayer=true;
 
 AoTHISaveManager save;
+Online online;
 bool newHighScore=false;
 bool newItemsDestoryedScore=false;
 
@@ -620,12 +622,83 @@ int main(int argc, char **argv)
 				
 			sf2d_start_frame(GFX_BOTTOM, GFX_LEFT);
 				sf2d_draw_texture(tex_bg_bottom, 0, 0);
-				sftd_draw_textf(font, 264, 5, RGBA8(255,255,255,255), 12, "FPS: %i", (int)(sf2d_get_fps()) );
-				timer+=1;
+				sftd_draw_textf(font, 264, 5, RGBA8(255,255,255,255), 12, "FPS: %i", (int)round(sf2d_get_fps()) );
+			sf2d_end_frame();
+			if (kDown & KEY_DOWN || kDown & KEY_UP){
+				if (goSelected == 0)
+					goSelected=1;
+				else
+					goSelected=0;
+			}
+			if (kDown & KEY_A) {
+				if (goSelected == 0){
+					state=1;
+					restart();
+				}else{
+					state=0;
+				}
+			}
+		}else{
+			sf2d_start_frame(GFX_TOP, GFX_LEFT);
+				sf2d_draw_texture(tex_bg, 0, 0);
+				if (menustate != 3 && menustate != 4 && menustate != 5){
+					sftd_draw_text(font, 170, 200, RGBA8(255,255,255,255), 25, "Press A to start!");
+					sf2d_draw_texture(tex_menu_mrtophat, 10, 30+(int)(20*sin(6.28*timer/240)) );
+					if (menustate == 0)
+						sf2d_draw_texture(tex_menu_logo, 150, 30);
+					if (menustate == 1){
+						sf2d_draw_texture(tex_menu_logo, 150, 30);
+						sf2d_draw_texture(tex_selector, 175, 115+20*selectedMenuOption);
+						sftd_draw_text(font, 200, 110, RGBA8(255,255,255,255), 20, "Play");
+						sftd_draw_text(font, 200, 130, RGBA8(255,255,255,255), 20, "Scoreboard");
+						sftd_draw_text(font, 200, 150, RGBA8(255,255,255,255), 20, "Online Leaderboard");
+					}
+					if (menustate == 2){
+						sf2d_draw_texture(tex_selector, 175, 95+20*selectedDificulty);
+						sftd_draw_text(font, 150, 50, RGBA8(255,255,255,255), 25, "Difficulty Select:");
+						sftd_draw_text(font, 200, 90, RGBA8(255,255,255,255), 20, "Normal");
+						sftd_draw_text(font, 200, 110, RGBA8(255,255,255,255), 20, "Hard");
+						sftd_draw_text(font, 200, 130, RGBA8(255,255,255,255), 20, "Insane");
+					}
+				}else if (menustate == 3){
+					sftd_draw_text(font, 20, 20, RGBA8(255,255,255,255), 20,  "<-");
+					sftd_draw_text(font, 380-sftd_get_text_width(font, 20, "->"), 20, RGBA8(255,255,255,255), 20,  "->");
+					if (highScoreState == 0){
+						sftd_draw_text(font, 200-sftd_get_text_width(font, 20, "High Scores")/2, 20, RGBA8(255,255,255,255), 20,  "High Scores");
+						sftd_draw_textf(font, 30, 50, RGBA8(255,255,255,255), 18, "Normal: %i\nHard: %i\nInsane: %i\n", save.getScore(0), save.getScore(1), save.getScore(2));
+					}
+					else{
+						sftd_draw_text(font, 200-sftd_get_text_width(font, 20, "Items Destoryed Scores")/2, 20, RGBA8(255,255,255,255), 20, "Items Destoryed Scores");
+						sftd_draw_textf(font, 30, 50, RGBA8(255,255,255,255), 18, "Normal: %i\nHard: %i\nInsane: %i\n", save.getItemsDestroyed(0), save.getItemsDestroyed(1), save.getItemsDestroyed(2));
+					}
+
+				}else if (menustate == 4){
+					if (!online.isLoaded()){
+						if (online.getLeaderboard() == 0)
+							online.convertDataToPages();
+						else{
+							menustate = 5;
+						}
+					}
+					sftd_draw_text(font, 20, 20, RGBA8(255,255,255,255), 20,  "<-");
+					sftd_draw_text(font, 380-sftd_get_text_width(font, 20, "->"), 20, RGBA8(255,255,255,255), 20,  "->");
+					sftd_draw_text(font, 200-sftd_get_text_width(font, 20, online.getPageData(0,0).c_str())/2, 20, RGBA8(255,255,255,255), 20,  online.getPageData(0,0).c_str());
+					for (int i=0; i < online.getPageLines(); i++){
+						sftd_draw_textf(font, 20,50+20*i,RGBA8(255,255,255,255),20,"%s", online.getPageData(0,i+1).c_str());
+					}
+				}else{
+					sftd_draw_textf(font, 200-sftd_get_text_width(font, 20, "Failed to connect! Press B to exit.")/2,0,RGBA8(255,255,255,255),20,"Failed to connect! Press B to exit.");
+					sftd_draw_textf(font, 0, 50, RGBA8(255,255,255,255),20, online.getRawPageData().c_str() );
+				}
+			sf2d_end_frame();
+				
+			sf2d_start_frame(GFX_BOTTOM, GFX_LEFT);
+				sf2d_draw_texture(tex_bg_bottom, 0, 0);
+				sftd_draw_textf(font, 264, 5, RGBA8(255,255,255,255), 12, "FPS: %i", (int)round(sf2d_get_fps()) );
+				sftd_draw_textf(font, 5, 5, RGBA8(255,255,255,255), 12, "LinearFreeMem: %i", (int)linearSpaceFree() );
+				sftd_draw_textf(font, 5, 25, RGBA8(255,255,255,255), 12, "name[0]: %s", save.getName(0).c_str() );
 			sf2d_end_frame();
 			if (kDown & KEY_A) {
-				state=1;
-				restart();
 				if (menustate == 0){
 					menustate=1;
 				}else if (menustate == 1){
