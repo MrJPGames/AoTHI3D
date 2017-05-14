@@ -19,6 +19,7 @@ class Bullet{
 		int getDirection();
 	private:
 		bool isAlive;
+		int aliveDuration;
 		int direction;
 		float max_speed;
 		float speed;

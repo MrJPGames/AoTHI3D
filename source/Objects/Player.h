@@ -11,6 +11,9 @@ class Player{
 		void setDirection(int dir);
 		int getDirection();
 		void setAim(int dir);
+		void setInvincible(int i);
+		bool getInvincible();
+		bool getVisable();
 		void update();
 		int getX();
 		int getY();
@@ -20,6 +23,7 @@ class Player{
 		float getAimInRads();
 	private:
 		int direction;
+		int invincible_timer=0;
 		int aim_direction;
 		float max_speed;
 		float speed;

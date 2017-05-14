@@ -43,6 +43,21 @@ void Player::setAim(int dir){
 	aim_direction=dir;
 }
 
+void Player::setInvincible(int i){
+	invincible_timer=i;
+}
+
+bool Player::getInvincible(){
+	return invincible_timer > 0;
+}
+
+bool Player::getVisable(){
+	if (invincible_timer % 20 < 10){
+		return true;
+	}
+	return false;
+}
+
 void Player::update(){
 	y-=speed*cos(direction*(PI/180));
 	x+=speed*sin(direction*(PI/180));
@@ -55,6 +70,9 @@ void Player::update(){
 		y=y-HEIGHT;
 	}else if (y<0){
 		y=HEIGHT+y;
+	}
+	if (invincible_timer > 0){
+		invincible_timer--;
 	}
 }
 

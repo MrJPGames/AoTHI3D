@@ -34,7 +34,7 @@ void Object::kill(){
 	special=0;
 	type = rand() % TYPES;
 	if ((rand() % 200) == 42){ //Special item!
-		type = 0;
+		type = rand() % SPECIALTYPES;
 		special=1;
 	}
 }
@@ -54,6 +54,10 @@ void Object::setSpeed(float var1){
 
 void Object::setDirection(int dir){
 	direction=dir;
+}
+
+void Object::setType(int in_type){
+	type=in_type;
 }
 
 void Object::update(){
@@ -98,6 +102,10 @@ void Object::setScale(float s){
 
 int Object::getType(){
 	return type;
+}
+
+void Object::setSpecial(bool is_special){
+	special=is_special;
 }
 
 int Object::isSpecial(){

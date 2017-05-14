@@ -18,6 +18,8 @@ class Object{
 		float getScale();
 		void setScale(float s);
 		int getType();
+		void setType(int type);
+		void setSpecial(bool is_special);
 		int isSpecial();
 	private:
 		bool isAlive;

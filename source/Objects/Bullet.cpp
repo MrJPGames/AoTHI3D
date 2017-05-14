@@ -7,6 +7,7 @@
 
 Bullet::Bullet(){
 	isAlive=0;
+	aliveDuration=0;
 	direction=0;
 	max_speed=2.5;
 	speed=0;
@@ -21,6 +22,7 @@ Bullet::Bullet(int var1, int var2){
 
 void Bullet::kill(){
 	isAlive=0;
+	aliveDuration=0;
 	type = round(rand() % 7);
 }
 
@@ -46,17 +48,30 @@ int Bullet::getDirection(){
 }
 
 void Bullet::update(){
+	aliveDuration++;
 	y-=speed*cos(direction*(PI/180));
 	x+=speed*sin(direction*(PI/180));
 	if (x > WIDTH+8){
-		kill();
+		if (aliveDuration <= 5)
+			x=-8;
+		else
+			kill();
 	}else if (x < -8){
-		kill();
+		if (aliveDuration <= 5)
+			x=WIDTH+8;
+		else
+			kill();
 	}
 	if (y > HEIGHT+8){
-		kill();
+		if (aliveDuration <= 5)
+			y=-8;
+		else
+			kill();
 	}else if (y < -8){
-		kill();	
+		if (aliveDuration <= 5)
+			x=HEIGHT+8;
+		else
+			kill();	
 	}
 }
 

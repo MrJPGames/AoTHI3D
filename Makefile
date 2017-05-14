@@ -34,7 +34,7 @@ INCLUDES	:=	include
 ROMFS		:=	romfs
 
 APP_TITLE		:= Attack of the Household Items
-APP_DESCRIPTION	:= Port of a PC indie game.
+APP_DESCRIPTION	:= Shoot space junk and get a high score!
 APP_AUTHOR		:= Jasper Peters (MrJPGames)
 
 #---------------------------------------------------------------------------------

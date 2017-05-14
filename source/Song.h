@@ -11,10 +11,13 @@ class Song{
 		void setChannel(int var1);
 		bool initSong(const char* name);
 		void play();
+		void stop();
 		int getChannel();
 	private:
 		int channel=1;
 		ndspWaveBuf waveBuf;
+		u8* data;
+		ndspWaveBuf emptyWaveBuf;
 };
 
 #endif

@@ -48,7 +48,7 @@ bool Song::initSong(const char* name){
     }
   
     // Allocating and reading samples
-    u8* data = (u8*)linearAlloc(dataSize);
+    data = (u8*)linearAlloc(dataSize);
   
     if(!data)
     {
@@ -84,7 +84,7 @@ bool Song::initSong(const char* name){
     // Create wav buffer
     memset(&waveBuf, 0, sizeof(waveBuf));
   
-    waveBuf.data_vaddr = (const void*)data;
+    waveBuf.data_vaddr = (void*)data;
     waveBuf.nsamples = dataSize / (bitsPerSample >> 3);
     waveBuf.looping = true; // Loop enabled
     waveBuf.status = NDSP_WBUF_FREE;
@@ -95,6 +95,11 @@ bool Song::initSong(const char* name){
 void Song::play(){
     ndspChnWaveBufClear(channel);
     ndspChnWaveBufAdd(channel, &waveBuf);
+}
+
+void Song::stop(){
+    ndspChnWaveBufClear(channel);
+    linearFree(data);
 }
 
 int Song::getChannel(){

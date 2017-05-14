@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <cstdlib> //For rand
 #include <math.h>
+#include <string>
 
 #include "Objects\Player.h"
 #include "Objects\Bullet.h"
@@ -17,6 +18,8 @@
 #include "Song.h"
 #include "AudioFX.h"
 
+#include "SaveManager.h"
+
 #include "OpenSans_ttf.h"
 #define PI 3.14159265
 #define MAX_NEW_EFFECT 350
@@ -27,7 +30,6 @@ using namespace std;
 Player player;
 Bullet bullets[30]; //Never more than ~15 on screen during normal gameplay (power-ups might change that)
 Object objects[50]; //Never 50 (~25 max) but HAS to be possible (easier to implement harder difficulties!)
-Effect effects[15]; //Currently no more needed, might be in the future tho!
 NewEffect new_effects[MAX_NEW_EFFECT]; //Way more needed than old effect
 Trail bullet_trails[200]; //Max on screen ~190
 circlePosition cpos;
@@ -50,16 +52,34 @@ int diffTimerMin=60*10;
 int score=0;
 int itemsDestroyed=0;
 
-int state=1;
+int state=0;
+int menustate=0;
+int selectedDificulty=0;
+int selectedMenuOption=0;
+int highScoreState=0;
+int goSelected=0;
+
+int timer=0; //Global timer
+
+int difficulty=0;
+
+int cur_song_id=0;
 
 Song bgm;
 
 AudioFX sfx_shoot;
 AudioFX sfx_explosion;
 
+string songNames[5] = {"Cut the Check by Spitfya x Desembra","Fade by Alan Walker","The Light by Tetrix Bass Feat. Veela","Spectre by Alan Walker", "OP by LOUD"};
+string songFileName[5] = {"romfs:/bgm/cut_the_check.wav", "romfs:/bgm/fade.wav", "romfs:/bgm/tetrix_bass.wav", "romfs:/bgm/spectre.wav", "romfs:/bgm/op.wav"};
+int SONG_AMOUNT = 5;
 
 //Things of even greater shame
 bool spawnEffectPlayer=true;
+
+AoTHISaveManager save;
+bool newHighScore=false;
+bool newItemsDestoryedScore=false;
 
 void restart(){
 	int x;
@@ -68,9 +88,6 @@ void restart(){
 	}
 	for (x=0;x<50;x++){
 		objects[x].kill();
-	}
-	for (x=0;x<15;x++){
-		effects[x].kill();
 	}
 	for (x=0;x<MAX_NEW_EFFECT;x++){
 		new_effects[x].kill();
@@ -81,19 +98,77 @@ void restart(){
 	shootTimerMax=7;
 
 	spawnTimer=20;
-	spawnTimerMax=60;
-	spawnTimerMin=15;
+	if (difficulty == 0){
+		spawnTimerMax=60;
+		spawnTimerMin=15;
+	}else if (difficulty == 1){
+		spawnTimerMax=30;
+		spawnTimerMin=8;
+	}else{
+		spawnTimerMax=10;
+		spawnTimerMin=5;
+	}
 
-	diffTimer=60*20;
-	diffTimerMax=diffTimer;
-	diffTimerMin=60*10;
+	//Sets how fast the spawn timer decreses (aka how quick it becomes more difficult)
+	if (difficulty == 0){
+		diffTimer=60*20;
+		diffTimerMax=diffTimer;
+		diffTimerMin=60*10;
+	}else if (difficulty == 1){
+		diffTimer=60*12;
+		diffTimerMax=diffTimer;
+		diffTimerMin=60*5;
+	}else{
+		diffTimer=60*20;
+		diffTimerMax=diffTimer;
+		diffTimerMin=60*5;
+	}
 
 	score=0;
 	itemsDestroyed=0;
+
+	int new_song_id=rand() % SONG_AMOUNT;
+	if (cur_song_id != new_song_id){
+		bgm.stop();
+		bgm.initSong(songFileName[new_song_id].c_str());
+		cur_song_id=new_song_id;
+		bgm.play();
+	}
+}
+
+void spawnObject(float x, float y, bool isSpecial=false, int type=-1, float speed=-1, int dir=-1){
+	for (int i = 0; i<50; i++){
+		if (objects[i].getAlive() == 0){
+			objects[i].resurect();
+			objects[i].setPos((int)x, (int)y);
+			if (speed == -1)
+				objects[i].setSpeed(1 + static_cast <float> (rand()) / static_cast <float> (RAND_MAX));
+			else
+				objects[i].setSpeed(speed);
+			objects[i].setScale(0.75 + static_cast <float> (rand()) / static_cast <float> (RAND_MAX/0.5));
+			objects[i].setSpecial(isSpecial);
+			if (type != -1){
+				objects[i].setType(type);
+			}
+			float xDiff = player.getX() - x;
+			float yDiff = player.getY() - y;
+			double angle=atan2(xDiff, -yDiff) * (180/PI);
+			if (dir == -1){
+				if (angle < 0){
+					objects[i].setDirection(360+angle-4+rand() % 9);
+				}else{
+					objects[i].setDirection(angle-4+rand() % 9);
+				}
+			}else{
+				objects[i].setDirection(dir);
+			}
+			i=50;
+		}
+	}
 }
 
 void spawn(int side){
-	int x,y,i;
+	int x,y;
 	switch(side){
 		case 0:
 			x=rand() % 400;
@@ -116,25 +191,8 @@ void spawn(int side){
 			y=0;
 			break;
 	}
-	for (i = 0; i<50; i++){
-		if (objects[i].getAlive() == 0){
-			objects[i].resurect();
-			objects[i].setPos(x, y);
-			objects[i].setSpeed(1 + static_cast <float> (rand()) / static_cast <float> (RAND_MAX));
-			objects[i].setScale(0.75 + static_cast <float> (rand()) / static_cast <float> (RAND_MAX/0.5));
-			float xDiff = player.getX() - x;
-			float yDiff = player.getY() - y;
-			double angle=atan2(xDiff, -yDiff) * (180/PI);
-			if (angle < 0){
-				objects[i].setDirection(360+angle-4+rand() % 9);
-			}else{
-				objects[i].setDirection(angle-4+rand() % 9);
-			}
-			i=50;
-		}
-	}
+	spawnObject(x,y);
 }
-
 
 void spawnEffect(int x, int y, int dir, float scale){
 	int i,j,max_j,newfx_x,newfx_y,newfx_dir;
@@ -199,16 +257,20 @@ void update(){
 	int b_size=3; //6x6 = radius of 3 (and yes they are 8x8 but the hitbox has to be slightly smaller because they don't fill the 8x8 area)
 	int o_size;
 	for (j=0;j<50;j++){ //Update object pos
-		if (objects[j].getAlive())
+		if (objects[j].getAlive()){
 			objects[j].update();
-	}
-	for (j=0;j<15;j++){ //Update object pos
-		if (effects[j].getAlive())
-			effects[j].update();
+			if (objects[j].isSpecial()){
+				if (objects[j].getType() == 0 && rand() % 60 == 42){
+					spawnObject(objects[j].getX(), objects[j].getY(), 1, 1, 3, objects[j].getAngle()*180/PI+180);
+				}
+			}
+		}
 	}
 	for (j=0;j<200;j++){ //Update object pos
 		if (bullet_trails[j].getAlive())
 			bullet_trails[j].update();
+	}
+	for (j=0;j<MAX_NEW_EFFECT;j++){
 		if (new_effects[j].getAlive())
 			new_effects[j].update();
 	}
@@ -248,21 +310,38 @@ void update(){
 	}else{
 		spawnEffectPlayer=true;
 	}
-	for (j=0;j<50;j++){ //Collision player-object
-		if (objects[j].getAlive()){
-			x1 = objects[j].getX();
-			y1 = objects[j].getY();
-			o_size=16*objects[j].getScale(); //32x32 = radius of 16
-			float diffX = x - x1;
-			float diffY = y - y1;
-			dist = sqrt((diffY * diffY) + (diffX * diffX));
-			if (dist < 10+o_size){
-				spawnEffect(x1,y1, -1 ,objects[j].getScale());
-				objects[j].kill();
-				//Play explosion sfx
-				sfx_explosion.play();
-				if (player.takeDamage()){
-					state=2;
+	if (!player.getInvincible()){
+		for (j=0;j<50;j++){ //Collision player-object
+			if (objects[j].getAlive()){
+				x1 = objects[j].getX();
+				y1 = objects[j].getY();
+				o_size=16*objects[j].getScale(); //32x32 = radius of 16
+				float diffX = x - x1;
+				float diffY = y - y1;
+				dist = sqrt((diffY * diffY) + (diffX * diffX));
+				if (dist < 10+o_size){
+					spawnEffect(x1,y1, -1 ,objects[j].getScale());
+					objects[j].kill();
+					//Play explosion sfx
+					sfx_explosion.play();
+					if (player.takeDamage()){
+						//Game Over event
+						newHighScore=false;
+						newItemsDestoryedScore=false;
+						if (score > save.getScore(difficulty)){
+							save.setScore(difficulty, score);
+							newHighScore=true;
+						}
+						if (itemsDestroyed > save.getItemsDestroyed(difficulty)){
+							save.setItemsDestroyed(difficulty, itemsDestroyed);
+							newItemsDestoryedScore=true;
+						}
+						if (newHighScore || newItemsDestoryedScore)
+							save.storeSaveData("3ds/AoTHISave.xml");
+						state=2;
+					}else{
+						player.setInvincible(120);
+					}
 				}
 			}
 		}
@@ -304,9 +383,6 @@ void shoot(){
 	}
 }
 
-//TODO: remove
-int timer=0; //Also remove rendering and timer+=1; just above rendering code!
-
 int main(int argc, char **argv)
 {
 	//Initialize the sf2d lib
@@ -323,17 +399,24 @@ int main(int argc, char **argv)
 	sf2d_texture *tex_player = sfil_load_PNG_file("romfs:/Player.png", SF2D_PLACE_RAM);
 	sf2d_texture *tex_bullet = sfil_load_PNG_file("romfs:/Bullets.png", SF2D_PLACE_RAM);
 	sf2d_texture *tex_object = sfil_load_PNG_file("romfs:/Objects.png", SF2D_PLACE_RAM);
-	sf2d_texture *tex_effect = sfil_load_PNG_file("romfs:/effect_explosion.png", SF2D_PLACE_RAM);
 	sf2d_texture *tex_new_effect = sfil_load_PNG_file("romfs:/new_effect_explosion.png", SF2D_PLACE_RAM);
 	sf2d_texture *tex_trail = sfil_load_PNG_file("romfs:/effect_trail.png", SF2D_PLACE_RAM);
 	sf2d_texture *tex_bg = sfil_load_PNG_file("romfs:/bg.png", SF2D_PLACE_RAM);
 	sf2d_texture *tex_bg_bottom = sfil_load_PNG_file("romfs:/bg_bottom.png", SF2D_PLACE_RAM);
-
+	sf2d_texture *tex_menu_mrtophat = sfil_load_PNG_file("romfs:/menu/MrTopHat.png", SF2D_PLACE_RAM);
+	sf2d_texture *tex_menu_logo = sfil_load_PNG_file("romfs:/menu/Logo.png", SF2D_PLACE_RAM);
+	sf2d_texture *tex_selector = sfil_load_PNG_file("romfs:/menu/Selector.png", SF2D_PLACE_RAM);
 	sftd_init();
 	sftd_font *font = sftd_load_font_mem(OpenSans_ttf, OpenSans_ttf_size);
 	sftd_draw_textf(font, 0, 0, RGBA8(255, 0, 0, 255), 50, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890:-.'!?()\"end"); //Hack to avoid blurry text!
 
-	bgm.initSong("romfs:/bgm/cut_the_check.wav");  //No need to set channel as 1 is default and that's the channel we are going to use for the bgm
+	int new_song_id=rand() % SONG_AMOUNT;
+	if (cur_song_id != new_song_id){
+		bgm.stop();
+		bgm.initSong(songFileName[new_song_id].c_str());
+		cur_song_id=new_song_id;
+		bgm.play();
+	}
 	sfx_shoot.setChannel(2,5);
 	sfx_explosion.setChannel(8,8);
 	sfx_shoot.initSfx("romfs:/sfx/shoot.wav");
@@ -347,6 +430,49 @@ int main(int argc, char **argv)
 
 	bgm.play();
 
+	//Intro
+		//Fade in of logo (0.2s-1s)
+		//Fade in of random startup text (1s-1.5s)
+		//End (2.5s)
+	for (int i=12; i > 0; i--){
+		sf2d_start_frame(GFX_TOP, GFX_LEFT);
+			sf2d_draw_texture(tex_bg, 0, 0);
+		sf2d_end_frame();
+		sf2d_start_frame(GFX_BOTTOM, GFX_LEFT);
+			sf2d_draw_texture(tex_bg_bottom, 0, 0);
+			//sftd_draw_textf(font, 264, 5, RGBA8(255,255,255,255), 12, "1: %i", (int)(i) );
+		sf2d_end_frame();
+		sf2d_swapbuffers();
+	}
+	for (int i=48; i>0; i--){
+		sf2d_start_frame(GFX_TOP, GFX_LEFT);
+			sf2d_draw_texture(tex_bg, 0, 0);
+			sf2d_draw_texture_scale_blend(tex_menu_logo, 28+(i*55/48), 69, 1+(0.5*(48-i)/48), 1+(0.5*(48-i)/48), RGBA8(255,255,255,(48-i)*255/48));
+		sf2d_end_frame();
+		sf2d_start_frame(GFX_BOTTOM, GFX_LEFT);
+			sf2d_draw_texture(tex_bg_bottom, 0, 0);
+			//sftd_draw_textf(font, 264, 5, RGBA8(255,255,255,255), 12, "2: %i", (int)(i) );
+		sf2d_end_frame();
+		sf2d_swapbuffers();
+	}
+	for (int i=120; i>0; i--){
+		//Scan all the inputs. This should be done once for each frame
+		hidScanInput();
+		u32 kDown = hidKeysDown();
+
+		sf2d_start_frame(GFX_TOP, GFX_LEFT);
+			sf2d_draw_texture(tex_bg, 0, 0);
+			sf2d_draw_texture_scale_blend(tex_menu_logo, 28, 69, 1.5, 1.5, RGBA8(255,255,255,255));
+		sf2d_end_frame();
+		sf2d_start_frame(GFX_BOTTOM, GFX_LEFT);
+			sf2d_draw_texture(tex_bg_bottom, 0, 0);
+			//sftd_draw_textf(font, 264, 5, RGBA8(255,255,255,255), 12, "3: %i", (int)(i) );
+		sf2d_end_frame();
+		sf2d_swapbuffers();
+		if (kDown & KEY_A) i=0;
+	}
+	save.loadSaveDataFromFile("3ds/AoTHISave.xml");
+
 	while (aptMainLoop()){
 		//Scan all the inputs. This should be done once for each frame
 		hidScanInput();
@@ -357,7 +483,7 @@ int main(int argc, char **argv)
 		u32 kDown = hidKeysDown();
 		u32 kHeld = hidKeysHeld();
 		u32 kUp = hidKeysUp();
-
+		timer+=1;
 		if (state == 1){
 			score+=1;
 			player.setSpeed(0);
@@ -417,8 +543,7 @@ int main(int argc, char **argv)
 				}
 			}
 
-			if (kDown & KEY_START) break; // break in order to return to hbmenu
-			if ( (kHeld & KEY_R || kHeld & KEY_L) && canShoot){
+			if ( (kHeld & KEY_R || kHeld & KEY_L || kHeld & KEY_TOUCH) && canShoot){
 				shoot();
 			}
 			if (kUp & KEY_R || kUp & KEY_L){
@@ -462,25 +587,35 @@ int main(int argc, char **argv)
 					}
 				}
 				if (player.getLives() == 1){
-					tempDamageColChangeValue=(int)(sin(6.28*score/120)*20)+60;
+					tempDamageColChangeValue=(int)(sin(6.28*timer/120)*20)+60;
 				}
-				sf2d_draw_texture_rotate_blend(tex_player, round(player.getX()), round(player.getY()), player.getAimInRads(), RGBA8(255,255-tempDamageColChangeValue,255-tempDamageColChangeValue,255));
+				sf2d_draw_texture_rotate_blend(tex_player, round(player.getX()), round(player.getY()), player.getAimInRads(), RGBA8(255,255-tempDamageColChangeValue,255-tempDamageColChangeValue,(int)player.getVisable()*255));
+				sf2d_draw_texture_rotate_blend(tex_player, round(player.getX()-400), round(player.getY()), player.getAimInRads(), RGBA8(255,255-tempDamageColChangeValue,255-tempDamageColChangeValue,(int)player.getVisable()*255));
+				sf2d_draw_texture_rotate_blend(tex_player, round(player.getX()+400), round(player.getY()), player.getAimInRads(), RGBA8(255,255-tempDamageColChangeValue,255-tempDamageColChangeValue,(int)player.getVisable()*255));
+				sf2d_draw_texture_rotate_blend(tex_player, round(player.getX()), round(player.getY()+240), player.getAimInRads(), RGBA8(255,255-tempDamageColChangeValue,255-tempDamageColChangeValue,(int)player.getVisable()*255));
+				sf2d_draw_texture_rotate_blend(tex_player, round(player.getX()), round(player.getY()-240), player.getAimInRads(), RGBA8(255,255-tempDamageColChangeValue,255-tempDamageColChangeValue,(int)player.getVisable()*255));
 			sf2d_end_frame();
 
 			sf2d_start_frame(GFX_BOTTOM, GFX_LEFT);
 				sf2d_draw_texture(tex_bg_bottom, 0, 0);
 				sftd_draw_textf(font, 10, 5, RGBA8(255,255,255,255), 12, "Lives: %d", player.getLives());
 				sftd_draw_textf(font, 10, 17, RGBA8(255,255,255,255), 12, "Score: %d", score);
-				sftd_draw_textf(font, 10, 29, RGBA8(255,255,255,255), 12, "Destoryed: %d", itemsDestroyed);
-				sftd_draw_textf(font, 264, 5, RGBA8(255,255,255,255), 12, "FPS: %i", (int)(sf2d_get_fps()) );
-				timer+=1;
+				sftd_draw_textf(font, 10, 29, RGBA8(255,255,255,255), 12, "Destroyed: %d", itemsDestroyed);
+				sftd_draw_textf(font, 10, 41, RGBA8(255,255,255,255), 12, "Current song: %s", songNames[cur_song_id].c_str());
+				//sftd_draw_textf(font, 10, 53, RGBA8(255,255,255,255), 12, "Free mem space: %i", linearSpaceFree());
+				sftd_draw_textf(font, 264, 5, RGBA8(255,255,255,255), 12, "FPS: %i", (int)round(sf2d_get_fps()) );
 			sf2d_end_frame();
 		}else if (state == 2){ //GameOver
 			sf2d_start_frame(GFX_TOP, GFX_LEFT);
 				sf2d_draw_texture(tex_bg, 0, 0);
 				sftd_draw_text(font, 116, 5, RGBA8(255,255,255,255), 30, "Game Over!");
 				sftd_draw_textf(font, 10, 70, RGBA8(255,255,255,255), 20, "Score: %d", score);
-				sftd_draw_textf(font, 10, 90, RGBA8(255,255,255,255), 20, "Items Destoryed: %d", itemsDestroyed);
+				sftd_draw_text(font, 250, 70, RGBA8(127+(int)(128*sin(6.28*(timer-20)/240)),127+(int)(128*sin(6.28*(timer-20)/120)),127+(int)(128*sin(6.28*(timer-60)/160)),255), 20, "New High Score!");
+				sftd_draw_textf(font, 10, 90, RGBA8(255,255,255,255), 20, "Items Destroyed: %d", itemsDestroyed);
+				sftd_draw_text(font, 250, 90, RGBA8(127+(int)(128*sin(6.28*(timer-11)/240)),127+(int)(128*sin(6.28*(timer-32)/240)),127+(int)(128*sin(6.28*(timer-72)/120)),255), 20, "New High Score!");
+				sftd_draw_text(font, 50, 180, RGBA8(255,255,255,255), 20, "Retry");
+				sftd_draw_text(font, 50, 200, RGBA8(255,255,255,255), 20, "Menu");
+				sf2d_draw_texture(tex_selector, 25, 185+20*goSelected);
 			sf2d_end_frame();
 				
 			sf2d_start_frame(GFX_BOTTOM, GFX_LEFT);
@@ -491,8 +626,60 @@ int main(int argc, char **argv)
 			if (kDown & KEY_A) {
 				state=1;
 				restart();
+				if (menustate == 0){
+					menustate=1;
+				}else if (menustate == 1){
+					menustate++;
+					menustate+=selectedMenuOption;
+				}else if (menustate == 2){
+					state=1;
+					difficulty=selectedDificulty;
+					restart();
+				}
+			}
+			if (kDown & KEY_B){
+				if (menustate == 1){
+					//online.setLoaded(false);
+					menustate=0;
+				}
+				if (menustate == 2 || menustate == 3 || menustate == 4 || menustate == 5)
+					menustate=1;
+			}
+			if (menustate == 2){
+				if (kDown & KEY_DOWN){
+					selectedDificulty++;
+					if (selectedDificulty > 2)
+						selectedDificulty=0;
+				}
+				if (kDown & KEY_UP){
+					selectedDificulty--;
+					if (selectedDificulty < 0)
+						selectedDificulty=2;
+				}
+			}
+			if (menustate == 1){
+				if (kDown & KEY_DOWN){
+					selectedMenuOption++;
+					if (selectedMenuOption > 2)
+						selectedMenuOption=0;
+				}
+				if (kDown & KEY_UP){
+					selectedMenuOption--;
+					if (selectedMenuOption < 0)
+						selectedMenuOption=2;
+				}
 			}
 		}
+		if (menustate == 3){
+			if (kDown & KEY_RIGHT || kDown & KEY_LEFT){
+				if (highScoreState == 0)
+					highScoreState=1;
+				else
+					highScoreState=0;
+			}
+		}
+		
+		if (kDown & KEY_START) break; // break in order to return to hbmenu
 		//Swap the buffers
 		sf2d_swapbuffers();
 	}
