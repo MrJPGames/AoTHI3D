@@ -11,7 +11,6 @@
 #include "Objects\Player.h"
 #include "Objects\Bullet.h"
 #include "Objects\Object.h"
-#include "Objects\Effect.h"
 #include "Objects\Trail.h"
 #include "Objects\NewEffect.h"
 
@@ -24,15 +23,20 @@
 #include "OpenSans_ttf.h"
 #define PI 3.14159265
 #define MAX_NEW_EFFECT 350
+#define MAX_OBJECT 50
+#define MAX_BULLET 30
+#define MAX_TRAIL 200
 
 using namespace std;
 
 
 Player player;
+
 Bullet bullets[30]; //Never more than ~15 on screen during normal gameplay (power-ups might change that)
 Object objects[50]; //Never 50 (~25 max) but HAS to be possible (easier to implement harder difficulties!)
 NewEffect new_effects[MAX_NEW_EFFECT]; //Way more needed than old effect
 Trail bullet_trails[200]; //Max on screen ~190
+
 circlePosition cpos;
 circlePosition cstick;
 touchPosition touch;
@@ -57,6 +61,7 @@ int state=0;
 int menustate=0;
 int selectedDificulty=0;
 int selectedMenuOption=0;
+int selectedSubMenuOption=0;
 int highScoreState=0;
 int goSelected=0;
 
@@ -78,8 +83,9 @@ int SONG_AMOUNT = 5;
 //Things of even greater shame
 bool spawnEffectPlayer=true;
 
-AoTHISaveManager save;
+AoTSJSaveManager save;
 Online online;
+int curPage=0;
 bool newHighScore=false;
 bool newItemsDestoryedScore=false;
 
@@ -139,7 +145,7 @@ void restart(){
 }
 
 void spawnObject(float x, float y, bool isSpecial=false, int type=-1, float speed=-1, int dir=-1){
-	for (int i = 0; i<50; i++){
+	for (int i = 0; i<MAX_OBJECT; i++){
 		if (objects[i].getAlive() == 0){
 			objects[i].resurect();
 			objects[i].setPos((int)x, (int)y);
@@ -164,7 +170,7 @@ void spawnObject(float x, float y, bool isSpecial=false, int type=-1, float spee
 			}else{
 				objects[i].setDirection(dir);
 			}
-			i=50;
+			break;
 		}
 	}
 }
@@ -244,11 +250,11 @@ void spawnPlayerEffect(int x, int y){
 
 void spawnTrail(int x, int y){
 	int i;
-	for (i = 0; i<200; i++){
+	for (i = 0; i<MAX_TRAIL; i++){
 		if (bullet_trails[i].getAlive() == false){
 			bullet_trails[i].resurect();
 			bullet_trails[i].setPos(x,y);
-			i=200;
+			break;
 		}
 	}
 }
@@ -258,17 +264,18 @@ void update(){
 	int x,y,x1,y1,dist;
 	int b_size=3; //6x6 = radius of 3 (and yes they are 8x8 but the hitbox has to be slightly smaller because they don't fill the 8x8 area)
 	int o_size;
-	for (j=0;j<50;j++){ //Update object pos
+	bool playerHasLostLifes=false;
+	for (j=0;j<MAX_OBJECT;j++){ //Update object pos
 		if (objects[j].getAlive()){
 			objects[j].update();
 			if (objects[j].isSpecial()){
 				if (objects[j].getType() == 0 && rand() % 60 == 42){
-					spawnObject(objects[j].getX(), objects[j].getY(), 1, 1, 3, objects[j].getAngle()*180/PI+180);
+					spawnObject(objects[j].getX(), objects[j].getY(), 1, 19, 3, objects[j].getAngle()*180/PI+180);
 				}
 			}
 		}
 	}
-	for (j=0;j<200;j++){ //Update object pos
+	for (j=0;j<MAX_TRAIL;j++){ //Update object pos
 		if (bullet_trails[j].getAlive())
 			bullet_trails[j].update();
 	}
@@ -276,13 +283,13 @@ void update(){
 		if (new_effects[j].getAlive())
 			new_effects[j].update();
 	}
-	for (i = 0; i<30; i++){ //Collision bullet-object
+	for (i = 0; i<MAX_BULLET; i++){ //Collision bullet-object
 		if (bullets[i].getAlive()){
 			bullets[i].update(); //Update bullet pos before collision checks
 			spawnTrail(bullets[i].getX(), bullets[i].getY());
 			x = bullets[i].getX();
 			y = bullets[i].getY();
-			for (j=0;j<50;j++){
+			for (j=0;j<MAX_OBJECT;j++){
 				if (objects[j].getAlive()){
 					x1 = objects[j].getX();
 					y1 = objects[j].getY();
@@ -291,14 +298,17 @@ void update(){
 					float diffY = y - y1;
 					dist = sqrt((diffY * diffY) + (diffX * diffX));
 					if (dist < b_size+o_size){
+						if (objects[j].isSpecial())
+							score+=1000;
+						else
+							score+=100;
+						itemsDestroyed+=1;
 						bullets[i].kill();
 						spawnEffect(x1,y1, bullets[i].getDirection(),objects[j].getScale());
 						objects[j].kill();
 						//Explosion sfx
 						sfx_explosion.play();
-						score+=100;
-						itemsDestroyed+=1;
-						j=50; //Bullet can only hit 1 object
+						break;
 					}
 				}
 			}
@@ -313,7 +323,7 @@ void update(){
 		spawnEffectPlayer=true;
 	}
 	if (!player.getInvincible()){
-		for (j=0;j<50;j++){ //Collision player-object
+		for (j=0;j<MAX_OBJECT;j++){ //Collision player-object
 			if (objects[j].getAlive()){
 				x1 = objects[j].getX();
 				y1 = objects[j].getY();
@@ -326,23 +336,26 @@ void update(){
 					objects[j].kill();
 					//Play explosion sfx
 					sfx_explosion.play();
-					if (player.takeDamage()){
-						//Game Over event
-						newHighScore=false;
-						newItemsDestoryedScore=false;
-						if (score > save.getScore(difficulty)){
-							save.setScore(difficulty, score);
-							newHighScore=true;
+					if (playerHasLostLifes == false){ //To avoid losing 2 or more lifes in 1 frame (rendering invincebility usless + instant GO possibility in Insane (Hard) mode)
+						if (player.takeDamage()){
+							//Game Over event
+							newHighScore=false;
+							playerHasLostLifes=true;
+							newItemsDestoryedScore=false;
+							if (score > save.getScore(difficulty)){
+								save.setScore(difficulty, score);
+								newHighScore=true;
+							}
+							if (itemsDestroyed > save.getItemsDestroyed(difficulty)){
+								save.setItemsDestroyed(difficulty, itemsDestroyed);
+								newItemsDestoryedScore=true;
+							}
+							if (newHighScore || newItemsDestoryedScore)
+								save.storeSaveData("/3ds/AoTSJSave.xml");
+							state=2;
+						}else{
+							player.setInvincible(120);
 						}
-						if (itemsDestroyed > save.getItemsDestroyed(difficulty)){
-							save.setItemsDestroyed(difficulty, itemsDestroyed);
-							newItemsDestoryedScore=true;
-						}
-						if (newHighScore || newItemsDestoryedScore)
-							save.storeSaveData("3ds/AoTHISave.xml");
-						state=2;
-					}else{
-						player.setInvincible(120);
 					}
 				}
 			}
@@ -370,17 +383,17 @@ void update(){
 
 void shoot(){
 	int i;
-	for (i = 0; i<30; i++){
+	for (i = 0; i<MAX_BULLET; i++){
 		if (bullets[i].getAlive() == 0){
 			bullets[i].resurect();
 			bullets[i].setPos(player.getX(), player.getY());
 			bullets[i].setSpeed(2);
 			bullets[i].setDirection(player.getAim()-2+rand() % 5);
-			i=30;
 			canShoot=0;
 			shootTimer=shootTimerMax;
 			//Play shoot sfx
 			sfx_shoot.play();
+			break;
 		}
 	}
 }
@@ -408,6 +421,8 @@ int main(int argc, char **argv)
 	sf2d_texture *tex_menu_mrtophat = sfil_load_PNG_file("romfs:/menu/MrTopHat.png", SF2D_PLACE_RAM);
 	sf2d_texture *tex_menu_logo = sfil_load_PNG_file("romfs:/menu/Logo.png", SF2D_PLACE_RAM);
 	sf2d_texture *tex_selector = sfil_load_PNG_file("romfs:/menu/Selector.png", SF2D_PLACE_RAM);
+	sf2d_texture *tex_skin_selector = sfil_load_PNG_file("romfs:/menu/SkinSelector.png", SF2D_PLACE_RAM);
+	sf2d_texture *tex_back = sfil_load_PNG_file("romfs:/menu/Back.png", SF2D_PLACE_RAM);
 	sftd_init();
 	sftd_font *font = sftd_load_font_mem(OpenSans_ttf, OpenSans_ttf_size);
 	sftd_draw_textf(font, 0, 0, RGBA8(255, 0, 0, 255), 50, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890:-.'!?()\"end"); //Hack to avoid blurry text!
@@ -473,7 +488,8 @@ int main(int argc, char **argv)
 		sf2d_swapbuffers();
 		if (kDown & KEY_A) i=0;
 	}
-	save.loadSaveDataFromFile("3ds/AoTHISave.xml");
+	save.loadSaveDataFromFile("/3ds/AoTSJSave.xml");
+	player.setSkin(save.getPlayerSkin());
 
 	while (aptMainLoop()){
 		//Scan all the inputs. This should be done once for each frame
@@ -591,11 +607,11 @@ int main(int argc, char **argv)
 				if (player.getLives() == 1){
 					tempDamageColChangeValue=(int)(sin(6.28*timer/120)*20)+60;
 				}
-				sf2d_draw_texture_rotate_blend(tex_player, round(player.getX()), round(player.getY()), player.getAimInRads(), RGBA8(255,255-tempDamageColChangeValue,255-tempDamageColChangeValue,(int)player.getVisable()*255));
-				sf2d_draw_texture_rotate_blend(tex_player, round(player.getX()-400), round(player.getY()), player.getAimInRads(), RGBA8(255,255-tempDamageColChangeValue,255-tempDamageColChangeValue,(int)player.getVisable()*255));
-				sf2d_draw_texture_rotate_blend(tex_player, round(player.getX()+400), round(player.getY()), player.getAimInRads(), RGBA8(255,255-tempDamageColChangeValue,255-tempDamageColChangeValue,(int)player.getVisable()*255));
-				sf2d_draw_texture_rotate_blend(tex_player, round(player.getX()), round(player.getY()+240), player.getAimInRads(), RGBA8(255,255-tempDamageColChangeValue,255-tempDamageColChangeValue,(int)player.getVisable()*255));
-				sf2d_draw_texture_rotate_blend(tex_player, round(player.getX()), round(player.getY()-240), player.getAimInRads(), RGBA8(255,255-tempDamageColChangeValue,255-tempDamageColChangeValue,(int)player.getVisable()*255));
+				sf2d_draw_texture_part_rotate_scale_blend(tex_player, round(player.getX()), round(player.getY()), player.getAimInRads(), player.getSkin()*20, 0, 20, 20, 1, 1, RGBA8(255,255-tempDamageColChangeValue, 255-tempDamageColChangeValue, (int)player.getVisable()*255));
+				sf2d_draw_texture_part_rotate_scale_blend(tex_player, round(player.getX()-400), round(player.getY()), player.getAimInRads(), player.getSkin()*20, 0, 20, 20, 1, 1, RGBA8(255,255-tempDamageColChangeValue, 255-tempDamageColChangeValue, (int)player.getVisable()*255));
+				sf2d_draw_texture_part_rotate_scale_blend(tex_player, round(player.getX()+400), round(player.getY()), player.getAimInRads(), player.getSkin()*20, 0, 20, 20, 1, 1, RGBA8(255,255-tempDamageColChangeValue, 255-tempDamageColChangeValue, (int)player.getVisable()*255));
+				sf2d_draw_texture_part_rotate_scale_blend(tex_player, round(player.getX()), round(player.getY()-240), player.getAimInRads(), player.getSkin()*20, 0, 20, 20, 1, 1, RGBA8(255,255-tempDamageColChangeValue, 255-tempDamageColChangeValue, (int)player.getVisable()*255));
+				sf2d_draw_texture_part_rotate_scale_blend(tex_player, round(player.getX()), round(player.getY()+240), player.getAimInRads(), player.getSkin()*20, 0, 20, 20, 1, 1, RGBA8(255,255-tempDamageColChangeValue, 255-tempDamageColChangeValue, (int)player.getVisable()*255));
 			sf2d_end_frame();
 
 			sf2d_start_frame(GFX_BOTTOM, GFX_LEFT);
@@ -612,9 +628,11 @@ int main(int argc, char **argv)
 				sf2d_draw_texture(tex_bg, 0, 0);
 				sftd_draw_text(font, 116, 5, RGBA8(255,255,255,255), 30, "Game Over!");
 				sftd_draw_textf(font, 10, 70, RGBA8(255,255,255,255), 20, "Score: %d", score);
-				sftd_draw_text(font, 250, 70, RGBA8(127+(int)(128*sin(6.28*(timer-20)/240)),127+(int)(128*sin(6.28*(timer-20)/120)),127+(int)(128*sin(6.28*(timer-60)/160)),255), 20, "New High Score!");
+				if (newHighScore)
+					sftd_draw_text(font, 250, 70, RGBA8(127+(int)(128*sin(6.28*(timer-20)/240)),127+(int)(128*sin(6.28*(timer-20)/120)),127+(int)(128*sin(6.28*(timer-60)/160)),255), 20, "New High Score!");
 				sftd_draw_textf(font, 10, 90, RGBA8(255,255,255,255), 20, "Items Destroyed: %d", itemsDestroyed);
-				sftd_draw_text(font, 250, 90, RGBA8(127+(int)(128*sin(6.28*(timer-11)/240)),127+(int)(128*sin(6.28*(timer-32)/240)),127+(int)(128*sin(6.28*(timer-72)/120)),255), 20, "New High Score!");
+				if (newItemsDestoryedScore)
+					sftd_draw_text(font, 250, 90, RGBA8(127+(int)(128*sin(6.28*(timer-11)/240)),127+(int)(128*sin(6.28*(timer-32)/240)),127+(int)(128*sin(6.28*(timer-72)/120)),255), 20, "New High Score!");
 				sftd_draw_text(font, 50, 180, RGBA8(255,255,255,255), 20, "Retry");
 				sftd_draw_text(font, 50, 200, RGBA8(255,255,255,255), 20, "Menu");
 				sf2d_draw_texture(tex_selector, 25, 185+20*goSelected);
@@ -641,17 +659,19 @@ int main(int argc, char **argv)
 		}else{
 			sf2d_start_frame(GFX_TOP, GFX_LEFT);
 				sf2d_draw_texture(tex_bg, 0, 0);
-				if (menustate != 3 && menustate != 4 && menustate != 5){
-					sftd_draw_text(font, 170, 200, RGBA8(255,255,255,255), 25, "Press A to start!");
+				if (menustate < 3){
 					sf2d_draw_texture(tex_menu_mrtophat, 10, 30+(int)(20*sin(6.28*timer/240)) );
-					if (menustate == 0)
+					if (menustate == 0){
+						sftd_draw_text(font, 170, 200, RGBA8(255,255,255,255), 25, "Press A to start!");
 						sf2d_draw_texture(tex_menu_logo, 150, 30);
+					}
 					if (menustate == 1){
 						sf2d_draw_texture(tex_menu_logo, 150, 30);
 						sf2d_draw_texture(tex_selector, 175, 115+20*selectedMenuOption);
 						sftd_draw_text(font, 200, 110, RGBA8(255,255,255,255), 20, "Play");
-						sftd_draw_text(font, 200, 130, RGBA8(255,255,255,255), 20, "Scoreboard");
-						sftd_draw_text(font, 200, 150, RGBA8(255,255,255,255), 20, "Online Leaderboard");
+						sftd_draw_text(font, 200, 130, RGBA8(255,255,255,255), 20, "Skins");
+						sftd_draw_text(font, 200, 150, RGBA8(255,255,255,255), 20, "Scoreboard");
+						sftd_draw_text(font, 200, 170, RGBA8(255,255,255,255), 20, "Online Leaderboard");
 					}
 					if (menustate == 2){
 						sf2d_draw_texture(tex_selector, 175, 95+20*selectedDificulty);
@@ -671,51 +691,75 @@ int main(int argc, char **argv)
 						sftd_draw_text(font, 200-sftd_get_text_width(font, 20, "Items Destoryed Scores")/2, 20, RGBA8(255,255,255,255), 20, "Items Destoryed Scores");
 						sftd_draw_textf(font, 30, 50, RGBA8(255,255,255,255), 18, "Normal: %i\nHard: %i\nInsane: %i\n", save.getItemsDestroyed(0), save.getItemsDestroyed(1), save.getItemsDestroyed(2));
 					}
-
+					sf2d_draw_texture(tex_back, 4, 212);
 				}else if (menustate == 4){
 					if (!online.isLoaded()){
-						if (online.getLeaderboard() == 0)
-							online.convertDataToPages();
-						else{
+						if (online.getLeaderboard() != 0){
 							menustate = 5;
 						}
 					}
-					sftd_draw_text(font, 20, 20, RGBA8(255,255,255,255), 20,  "<-");
-					sftd_draw_text(font, 380-sftd_get_text_width(font, 20, "->"), 20, RGBA8(255,255,255,255), 20,  "->");
-					sftd_draw_text(font, 200-sftd_get_text_width(font, 20, online.getPageData(0,0).c_str())/2, 20, RGBA8(255,255,255,255), 20,  online.getPageData(0,0).c_str());
+					sftd_draw_text(font, 20, 10, RGBA8(255,255,255,255), 20,  "<-");
+					sftd_draw_text(font, 380-sftd_get_text_width(font, 20, "->"), 10, RGBA8(255,255,255,255), 20,  "->");
+					sftd_draw_textf(font, 0, 50, RGBA8(255,255,255,255),20, online.getRawPageData().c_str() );
+					sftd_draw_text(font, 200-sftd_get_text_width(font, 20, online.getPageData(curPage,0).c_str())/2, 10, RGBA8(255,255,255,255), 20,  online.getPageData(curPage,0).c_str());
 					for (int i=0; i < online.getPageLines(); i++){
-						sftd_draw_textf(font, 20,50+20*i,RGBA8(255,255,255,255),20,"%s", online.getPageData(0,i+1).c_str());
+						sftd_draw_textf(font, 20,35+20*i,RGBA8(255,255,255,255),20,"%s", online.getPageData(curPage,i+1).c_str());
 					}
-				}else{
+				}else if (menustate == 5){
 					sftd_draw_textf(font, 200-sftd_get_text_width(font, 20, "Failed to connect! Press B to exit.")/2,0,RGBA8(255,255,255,255),20,"Failed to connect! Press B to exit.");
 					sftd_draw_textf(font, 0, 50, RGBA8(255,255,255,255),20, online.getRawPageData().c_str() );
+				}else{
+					sftd_draw_textf(font, 200-sftd_get_text_width(font, 20, "Select a player skin:")/2,0,RGBA8(255,255,255,255),20,"Select a player skin:");
+					for (int i=0; i < tex_player->width/20; i++){
+						sf2d_draw_texture_part_scale(tex_player, 30+i*60, 50, i*20, 0, 20, 20, 2, 2);
+					}
+					sf2d_draw_texture_part_scale(tex_skin_selector, 26+player.getSkin()*60, 48, 24, 0, 24, 24, 2, 2);
+					sf2d_draw_texture_part_scale(tex_skin_selector, 26+selectedSubMenuOption*60, 48, 0, 0, 24, 24, 2, 2);
+					sf2d_draw_texture(tex_back, 4, 212);
 				}
 			sf2d_end_frame();
 				
 			sf2d_start_frame(GFX_BOTTOM, GFX_LEFT);
 				sf2d_draw_texture(tex_bg_bottom, 0, 0);
 				sftd_draw_textf(font, 264, 5, RGBA8(255,255,255,255), 12, "FPS: %i", (int)round(sf2d_get_fps()) );
-				sftd_draw_textf(font, 5, 5, RGBA8(255,255,255,255), 12, "LinearFreeMem: %i", (int)linearSpaceFree() );
-				sftd_draw_textf(font, 5, 25, RGBA8(255,255,255,255), 12, "name[0]: %s", save.getName(0).c_str() );
+				sftd_draw_textf(font, 10, 41, RGBA8(255,255,255,255), 12, "Current song: %s", songNames[cur_song_id].c_str());
 			sf2d_end_frame();
 			if (kDown & KEY_A) {
 				if (menustate == 0){
 					menustate=1;
 				}else if (menustate == 1){
-					menustate++;
-					menustate+=selectedMenuOption;
+					switch (selectedMenuOption){
+						case 0:
+							menustate = 2;
+							break;
+						case 1:
+							selectedSubMenuOption=player.getSkin();
+							menustate = 6;
+							break;
+						case 2:
+							menustate = 3;
+							break;
+						case 3:
+							menustate = 4;
+							break;
+					}
 				}else if (menustate == 2){
 					state=1;
 					difficulty=selectedDificulty;
 					restart();
+				}else if (menustate == 6){
+					menustate=1;
+					player.setSkin(selectedSubMenuOption);
+					save.setPlayerSkin(selectedMenuOption);
+					save.storeSaveData("/3ds/AoTSJSave.xml");
 				}
 			}
 			if (kDown & KEY_B){
 				if (menustate == 1){
-					//online.setLoaded(false);
+					online.setLoaded(false);
 					menustate=0;
 				}
-				if (menustate == 2 || menustate == 3 || menustate == 4 || menustate == 5)
+				if (menustate > 1)
 					menustate=1;
 			}
 			if (menustate == 2){
@@ -733,13 +777,13 @@ int main(int argc, char **argv)
 			if (menustate == 1){
 				if (kDown & KEY_DOWN){
 					selectedMenuOption++;
-					if (selectedMenuOption > 2)
+					if (selectedMenuOption > 3)
 						selectedMenuOption=0;
 				}
 				if (kDown & KEY_UP){
 					selectedMenuOption--;
 					if (selectedMenuOption < 0)
-						selectedMenuOption=2;
+						selectedMenuOption=3;
 				}
 			}
 		}
@@ -749,6 +793,32 @@ int main(int argc, char **argv)
 					highScoreState=1;
 				else
 					highScoreState=0;
+			}
+		}
+		if (menustate == 4){
+			if (kDown & KEY_RIGHT){
+				curPage++;
+				if (curPage > online.getPageCount()-1){
+					curPage=0;
+				}
+			}
+			if (kDown & KEY_LEFT){
+				curPage--;
+				if (curPage < 0){
+					curPage=online.getPageCount()-1;
+				}
+			}
+		}
+		if (menustate == 6){
+			if (kDown & KEY_LEFT){
+				selectedSubMenuOption--;
+				if (selectedSubMenuOption < 0)
+					selectedSubMenuOption=tex_player->width/20-1;
+			}
+			if (kDown & KEY_RIGHT){
+				selectedSubMenuOption++;
+				if (selectedSubMenuOption >= tex_player->width/20)
+					selectedSubMenuOption=0;
 			}
 		}
 		

@@ -26,15 +26,15 @@ include $(DEVKITARM)/3ds_rules
 #     - icon.png
 #     - <libctru folder>/default_icon.png
 #---------------------------------------------------------------------------------
-TARGET		:=	AoTHI
+TARGET		:=	AoTSJ
 BUILD		:=	build
 SOURCES		:=	source source/Objects
 DATA		:=	data
-INCLUDES	:=	include
+INCLUDES	:=	include include/Objects
 ROMFS		:=	romfs
 
-APP_TITLE		:= Attack of the Household Items
-APP_DESCRIPTION	:= Shoot space junk and get a high score!
+APP_TITLE		:= Attack of the Space Junk
+APP_DESCRIPTION	:= Shoot space junk and get the highest score!
 APP_AUTHOR		:= Jasper Peters (MrJPGames)
 
 #---------------------------------------------------------------------------------

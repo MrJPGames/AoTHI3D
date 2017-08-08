@@ -13,18 +13,18 @@ class Online{
 	public:
 		Online();
 		Result getLeaderboard();
-		Result getLeaderboardFromURL(const char* url);
-		Result uploadLeaderBoardData(const char* url); //Does this when getLeaderbaard is requested as well.
+		string getStringFromURL(const char* url, bool toPageData);
 		bool isLoaded();
 		void setLoaded(bool ld);
 		string getPageData(int page_num, int page_line);
 		int getPageLines();
 		int getPageCount();
-		void convertDataToPages();
+		void loadStatsFromFile(string fileLocation);
+		void loadStatsFromBuffer(const char* buffer, int size);
 		string getRawPageData();
 	private:
 		string pageData;
-		string pages[10][15]; //Max 10 pages with pageSize 15 (page[x][0] is always title)
+		string pages[10][12]; //Max 10 pages with pageSize 11 (page[x][0] is always title)
 		int pageLines=10;
 		int pageCount=1;
 		bool loaded=false;

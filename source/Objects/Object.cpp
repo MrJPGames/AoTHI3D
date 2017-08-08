@@ -5,7 +5,7 @@
 #define WIDTH 400
 #define HEIGHT 240
 #define TYPES 12
-#define SPECIALTYPES 1
+#define SPECIALTYPES 2
 
 Object::Object(){
 	isAlive=0;

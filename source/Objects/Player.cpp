@@ -76,6 +76,11 @@ void Player::update(){
 	}
 }
 
+void Player::setSkin(int skinID){
+	skin=skinID;
+}
+
+
 bool Player::takeDamage(){
 	lives-=1;
 	if (lives<=0){
@@ -100,6 +105,10 @@ int Player::getAim(){
 
 int Player::getLives(){
 	return lives;
+}
+
+int Player::getSkin(){
+	return skin;
 }
 
 float Player::getAimInRads(){

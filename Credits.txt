@@ -1,0 +1,11 @@
+MrJPGames: Game
+
+Art:
+Julian van Leeuwen (most artwork)
+GrafxKid (2 Characters and 1 "Special" Object)
+Kenney (Menu Selector Graphic)
+matty_m (B button graphic) (Slightly modified by me)
+
+Fonts:
+Google/Steve Matteson - Open Sans
+Joiro Hatgaya - 8 Bit Wonder
