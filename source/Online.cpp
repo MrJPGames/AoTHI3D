@@ -18,14 +18,6 @@ Result Online::getLeaderboard(){
 	u64 hash;
 	CFGU_GenHashConsoleUnique(0x1337, &hash);
 
-	u8 * outdata = (u8*)malloc(0x1C);
-	u8 * outdata2 = (u8*)malloc(0x1C);
-	CFGU_GetConfigInfoBlk2 (0x4, 0x000B0000, outdata);
-	utf16_to_utf8(outdata2,(u16*)outdata,0x4);
-	string countryInfo((char*)outdata2, 0x4);
-	free(outdata);
-	free(outdata2);
-
 	cfguExit();
 
 	string s = buffer.str();
@@ -39,12 +31,12 @@ Result Online::getLeaderboard(){
         s.erase ( s.find (" "), 1 );
     }
 
-	string url = (string)"http://poc.debug-it.nl/AoTSJ/?uploadScore=1&country_id=" + countryInfo[4] + (string)"&id=" + to_string(hash) + (string)"&xml=" + s;
+	string url = (string)"http://poc.debug-it.nl/AoTSJ/?uploadScore=1&id=" + to_string(hash) + (string)"&xml=" + s;
 
 	getStringFromURL(url.c_str(), false);
-	string ret = getStringFromURL("http://poc.debug-it.nl/AoTSJ/?getLeaderboard=1", true);
+	url="http://poc.debug-it.nl/AoTSJ/?getLeaderboard=1&id=" + to_string(hash);
+	string ret = getStringFromURL(url.c_str(), true);
 	if (ret == "Successful"){
-		//loadStatsFromFile("/3ds/AoTSJonlinestats.xml");
 		loaded=true;
 		return 0;
 	}else{
@@ -174,7 +166,6 @@ string Online::getStringFromURL(const char* url, bool toPageData){
 				j=1;
 				pages[i][0] = node->FirstChildElement("title")->GetText();
 				for (XMLElement * item_element = node->FirstChildElement("item0"); item_element != nullptr; item_element = item_element->NextSiblingElement()){
-					//NOTE: might have to be node->FirstChildElement("item0")!
 					pages[i][j] = item_element->GetText();
 					if (j > pageLines)
 						pageLines=j;

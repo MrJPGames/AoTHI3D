@@ -24,7 +24,7 @@ class Online{
 		string getRawPageData();
 	private:
 		string pageData;
-		string pages[6][11]; //Max 10 pages with pageSize 11 (page[x][0] is always title)
+		string pages[10][11]; //Max 10 pages with pageSize 11 (page[x][0] is always title)
 		int pageLines=10;
 		int pageCount=1;
 		bool loaded=false;

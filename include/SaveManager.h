@@ -17,16 +17,17 @@ class AoTSJSaveManager{
 		void storeSaveData(string fileLocation);
 		int getScore(int difficulty);
 		int getItemsDestroyed(int difficulty);
-		string getName(int difficulty);
+		string getName();
 		inline bool file_exists(const std::string& name);
 		void setScore(int dif, int scr);
 		void setItemsDestroyed(int dif, int idstry);
 		void setPlayerSkin(int skinID);
 		int getPlayerSkin();
+		string getHash();
 	private:
 		tinyxml2::XMLDocument xml_doc;
 		string localUsername;
-		string name[3];
+		string hash;
 		int score[3]={0,0,0};
 		int itemsDestroyed[3] = {0,0,0};
 		int skin=0;

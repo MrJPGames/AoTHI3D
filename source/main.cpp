@@ -203,7 +203,7 @@ void spawn(int side){
 void spawnEffect(int x, int y, int dir, float scale){
 	int i,j,max_j,newfx_x,newfx_y,newfx_dir;
 	j=0;
-	max_j=30+(scale-0.75)*15;
+	max_j=10+(scale-0.75)*10;
 	for (i = 0; i<MAX_NEW_EFFECT; i++){
 		if (new_effects[i].getAlive() == false){
 			j++;
@@ -273,7 +273,7 @@ void update(){
 			}
 		}
 	}
-	for (j=0;j<MAX_TRAIL;j++){ //Update object pos
+	for (j=0;j<MAX_TRAIL;j++){ //Update trail state
 		if (bullet_trails[j].getAlive())
 			bullet_trails[j].update();
 	}
@@ -643,20 +643,25 @@ int main(int argc, char **argv)
 				sftd_draw_textf(font, 10, 90, RGBA8(255,255,255,255), 20, "Items Destroyed: %d", itemsDestroyed);
 				if (newItemsDestoryedScore)
 					sftd_draw_text(font, 250, 90, RGBA8(127+(int)(128*sin(6.28*(timer-11)/240)),127+(int)(128*sin(6.28*(timer-32)/240)),127+(int)(128*sin(6.28*(timer-72)/120)),255), 20, "New High Score!");
-				sftd_draw_text(font, 50, 180, RGBA8(255,255,255,255), 20, "Retry");
+				sftd_draw_text(font, 50, 160, RGBA8(255,255,255,255), 20, "Retry");
+				sftd_draw_text(font, 50, 180, RGBA8(255,255,255,255), 20, "Change Difficulty");
 				sftd_draw_text(font, 50, 200, RGBA8(255,255,255,255), 20, "Menu");
-				sf2d_draw_texture(tex_selector, 25, 185+20*goSelected);
+				sf2d_draw_texture(tex_selector, 25, 160+20*goSelected);
 			sf2d_end_frame();
 				
 			sf2d_start_frame(GFX_BOTTOM, GFX_LEFT);
 				sf2d_draw_texture(tex_bg_bottom, 0, 0);
 				sftd_draw_textf(font, 264, 5, RGBA8(255,255,255,255), 12, "FPS: %i", (int)round(sf2d_get_fps()) );
 			sf2d_end_frame();
-			if (kDown & KEY_DOWN || kDown & KEY_UP){
-				if (goSelected == 0)
-					goSelected=1;
-				else
+			if (kDown & KEY_DOWN){
+				goSelected++;
+				if (goSelected > 2)
 					goSelected=0;
+			}
+			if (kDown & KEY_UP){
+				goSelected--;
+				if (goSelected < 0)
+					goSelected=2;
 			}
 			if (kDown & KEY_A) {
 				if (goSelected == 0){
@@ -664,6 +669,8 @@ int main(int argc, char **argv)
 					restart();
 				}else{
 					state=0;
+					if (goSelected == 2)
+						menustate=1;
 				}
 			}
 		}else{
@@ -677,7 +684,7 @@ int main(int argc, char **argv)
 					}
 					if (menustate == 1){
 						sf2d_draw_texture(tex_menu_logo, 150, 30);
-						sf2d_draw_texture(tex_selector, 175, 115+20*selectedMenuOption);
+						sf2d_draw_texture(tex_selector, 175, 110+20*selectedMenuOption);
 						sftd_draw_text(font, 200, 110, RGBA8(255,255,255,255), 20, "Play");
 						sftd_draw_text(font, 200, 130, RGBA8(255,255,255,255), 20, "Skins");
 						sftd_draw_text(font, 200, 150, RGBA8(255,255,255,255), 20, "Scoreboard");
@@ -685,7 +692,7 @@ int main(int argc, char **argv)
 						sftd_draw_text(font, 200, 190, RGBA8(255,255,255,255), 20, "Controls");
 					}
 					if (menustate == 2){
-						sf2d_draw_texture(tex_selector, 175, 95+20*selectedDificulty);
+						sf2d_draw_texture(tex_selector, 175, 90+20*selectedDificulty);
 						sftd_draw_text(font, 150, 50, RGBA8(255,255,255,255), 25, "Difficulty Select:");
 						sftd_draw_text(font, 200, 90, RGBA8(255,255,255,255), 20, "Normal");
 						sftd_draw_text(font, 200, 110, RGBA8(255,255,255,255), 20, "Hard");
@@ -705,13 +712,14 @@ int main(int argc, char **argv)
 					sf2d_draw_texture(tex_back, 4, 212);
 				}else if (menustate == 4){
 					if (!online.isLoaded()){
+						sftd_draw_text(font, 200-sftd_get_text_width(font, 20, "Connecting...")/2, 10, RGBA8(255,255,255,255), 20, "Connecting...");
+						sf2d_swapbuffers();
 						if (online.getLeaderboard() != 0){
 							menustate = 5;
 						}
 					}
 					sftd_draw_text(font, 20, 10, RGBA8(255,255,255,255), 20,  "<-");
 					sftd_draw_text(font, 380-sftd_get_text_width(font, 20, "->"), 10, RGBA8(255,255,255,255), 20,  "->");
-					sftd_draw_textf(font, 0, 50, RGBA8(255,255,255,255),20, online.getRawPageData().c_str() );
 					sftd_draw_text(font, 200-sftd_get_text_width(font, 20, online.getPageData(curPage,0).c_str())/2, 10, RGBA8(255,255,255,255), 20,  online.getPageData(curPage,0).c_str());
 					for (int i=0; i < online.getPageLines(); i++){
 						sftd_draw_textf(font, 20,35+20*i,RGBA8(255,255,255,255),20,"%s", online.getPageData(curPage,i+1).c_str());
@@ -719,6 +727,7 @@ int main(int argc, char **argv)
 				}else if (menustate == 5){
 					sftd_draw_textf(font, 200-sftd_get_text_width(font, 20, "Failed to connect! Press B to exit.")/2,0,RGBA8(255,255,255,255),20,"Failed to connect! Press B to exit.");
 					sftd_draw_textf(font, 0, 50, RGBA8(255,255,255,255),20, online.getRawPageData().c_str() );
+					sf2d_draw_texture(tex_back, 4, 212);
 				}else if (menustate == 6){
 					int xpos,ypos;
 					sftd_draw_textf(font, 200-sftd_get_text_width(font, 20, "Select a player skin:")/2,0,RGBA8(255,255,255,255),20,"Select a player skin:");
@@ -779,6 +788,7 @@ int main(int argc, char **argv)
 							menustate = 3;
 							break;
 						case 3:
+							curPage=0;
 							menustate = 4;
 							break;
 						case 4:
@@ -796,8 +806,8 @@ int main(int argc, char **argv)
 				}
 			}
 			if (kDown & KEY_B){
+				online.setLoaded(false);
 				if (menustate == 1){
-					online.setLoaded(false);
 					menustate=0;
 				}
 				if (menustate > 1)
@@ -869,12 +879,7 @@ int main(int argc, char **argv)
 			if (kDown & KEY_UP){
 				selectedSubMenuOption-=6;
 				if (selectedSubMenuOption < 0){
-					int ypos, xpos;
-					xpos=6+selectedSubMenuOption;
-					ypos = ceil(tex_player->width/120);
-					selectedSubMenuOption=ypos*6+xpos;
-					if (selectedSubMenuOption >= tex_player->width/20)
-						selectedSubMenuOption=tex_player->width/20-1;
+					selectedSubMenuOption=tex_player->width/20+selectedSubMenuOption;
 				}
 			}
 		}

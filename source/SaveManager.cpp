@@ -1,10 +1,20 @@
 #include "SaveManager.h"
+#include "sha256.h"
 
 using namespace std;
 
 inline bool AoTSJSaveManager::file_exists(const std::string& name) {
 	ifstream f(name.c_str());
 	return f.good();
+}
+
+string AoTSJSaveManager::getHash(){
+	//Calculate hash
+	//Please DO NOT cheat! (Yes it can be broken, yes the key is in the release binary, no you shouldn't go looking for it)
+	string secret="private"; //Not actual key on GitHub
+	string to_hash=secret+to_string(score[0])+to_string(score[1])+to_string(score[2])+to_string(itemsDestroyed[0])+to_string(itemsDestroyed[1])+to_string(itemsDestroyed[2]);
+	string hash = sha256(to_hash);
+	return hash;
 }
 
 void AoTSJSaveManager::loadSaveDataFromFile(string fileLocation){
@@ -14,13 +24,15 @@ void AoTSJSaveManager::loadSaveDataFromFile(string fileLocation){
 	u8 * outdata2 = (u8*)malloc(0x1C);
 	CFGU_GetConfigInfoBlk2 (0x1C, 0x000A0000, outdata);
 	utf16_to_utf8(outdata2,(u16*)outdata,0x1C);
-	string str((char*)outdata2, 0x1B);
+	string str((char*)outdata2, 0x1C);
 	localUsername = str;
 	free(outdata);
 	free(outdata2);
 	cfguExit();
 
 	if (file_exists(fileLocation)){
+		string expectedHash;
+
 		//Load file
 		std::ifstream t(fileLocation);
 		std::stringstream buffer;
@@ -34,32 +46,33 @@ void AoTSJSaveManager::loadSaveDataFromFile(string fileLocation){
 			if (root != nullptr){
 				tinyxml2::XMLElement* element = root->FirstChildElement("easy");
 				if (element != nullptr){
-					name[0]=element->FirstChildElement("name")->GetText();
 					element->FirstChildElement("score")->QueryIntText(&score[0]);
 					element->FirstChildElement("itemsDestroyed")->QueryIntText(&itemsDestroyed[0]);
 				}
 				element = root->FirstChildElement("normal");
 				if (element != nullptr){
-					name[1]=element->FirstChildElement("name")->GetText();
 					element->FirstChildElement("score")->QueryIntText(&score[1]);
 					element->FirstChildElement("itemsDestroyed")->QueryIntText(&itemsDestroyed[1]);
 				}
 				element = root->FirstChildElement("hard");
 				if (element != nullptr){
-					name[2]=element->FirstChildElement("name")->GetText();
 					element->FirstChildElement("score")->QueryIntText(&score[2]);
 					element->FirstChildElement("itemsDestroyed")->QueryIntText(&itemsDestroyed[2]);
 				}
 				element = root->FirstChildElement("general");
 				if (element != nullptr){
 					element->FirstChildElement("skinID")->QueryIntText(&skin);
+					expectedHash = element->FirstChildElement("hash")->GetText();
 				}
 			}
 		}
+		if (expectedHash != getHash()){
+			for (int i=0; i<3; i++){
+				score[i]=0;
+				itemsDestroyed[i]=0;
+			}
+		}
 	}else{
-		name[0]=localUsername;
-		name[1]=localUsername;
-		name[2]=localUsername;
 		storeSaveData(fileLocation);
 	}
 }
@@ -81,9 +94,6 @@ void AoTSJSaveManager::storeSaveData(string fileLocation){
 	pRoot->InsertEndChild(pGeneralNode);
 
 	//Insert save data
-	tinyxml2::XMLElement * pEasyNameElement = xml_doc.NewElement("name");
-	pEasyNameElement->SetText(name[0].c_str());
-	pEasyNode->InsertEndChild(pEasyNameElement);
 	tinyxml2::XMLElement * pEasyScoreElement = xml_doc.NewElement("score");
 	pEasyScoreElement->SetText(score[0]);
 	pEasyNode->InsertEndChild(pEasyScoreElement);
@@ -91,9 +101,6 @@ void AoTSJSaveManager::storeSaveData(string fileLocation){
 	pEasyItemsDestroyedElement->SetText(itemsDestroyed[0]);
 	pEasyNode->InsertEndChild(pEasyItemsDestroyedElement);
 
-	tinyxml2::XMLElement * pNormalNameElement = xml_doc.NewElement("name");
-	pNormalNameElement->SetText(name[1].c_str());
-	pNormalNode->InsertEndChild(pNormalNameElement);
 	tinyxml2::XMLElement * pNormalScoreElement = xml_doc.NewElement("score");
 	pNormalScoreElement->SetText(score[1]);
 	pNormalNode->InsertEndChild(pNormalScoreElement);
@@ -101,9 +108,6 @@ void AoTSJSaveManager::storeSaveData(string fileLocation){
 	pNormalItemsDestroyedElement->SetText(itemsDestroyed[1]);
 	pNormalNode->InsertEndChild(pNormalItemsDestroyedElement);
 
-	tinyxml2::XMLElement * pHardNameElement = xml_doc.NewElement("name");
-	pHardNameElement->SetText(name[2].c_str());
-	pHardNode->InsertEndChild(pHardNameElement);
 	tinyxml2::XMLElement * pHardScoreElement = xml_doc.NewElement("score");
 	pHardScoreElement->SetText(score[2]);
 	pHardNode->InsertEndChild(pHardScoreElement);
@@ -111,9 +115,19 @@ void AoTSJSaveManager::storeSaveData(string fileLocation){
 	pHardItemsDestroyedElement->SetText(itemsDestroyed[2]);
 	pHardNode->InsertEndChild(pHardItemsDestroyedElement);
 
+	//General part
+	tinyxml2::XMLElement * pGeneralNameElement = xml_doc.NewElement("name");
+	pGeneralNameElement->SetText(localUsername.c_str());
+	pGeneralNode->InsertEndChild(pGeneralNameElement);
 	tinyxml2::XMLElement * pGeneralSkinElement = xml_doc.NewElement("skinID");
 	pGeneralSkinElement->SetText(skin);
 	pGeneralNode->InsertEndChild(pGeneralSkinElement);
+	
+	string hash = getHash();
+
+	tinyxml2::XMLElement * pGeneralHashlement = xml_doc.NewElement("hash");
+	pGeneralHashlement->SetText(hash.c_str());
+	pGeneralNode->InsertEndChild(pGeneralHashlement);
 
 	//Actually save
 	xml_doc.SaveFile(fileLocation.c_str());
@@ -131,8 +145,8 @@ int AoTSJSaveManager::getPlayerSkin(){
 	return skin;
 }
 
-string AoTSJSaveManager::getName(int dif){
-	return name[dif];
+string AoTSJSaveManager::getName(){
+	return localUsername;
 }
 
 void AoTSJSaveManager::setScore(int dif, int scr){

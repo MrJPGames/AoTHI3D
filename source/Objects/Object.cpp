@@ -4,7 +4,7 @@
 #define PI 3.14159265
 #define WIDTH 400
 #define HEIGHT 240
-#define TYPES 17
+#define TYPES 18
 #define SPECIALTYPES 4
 
 Object::Object(){
