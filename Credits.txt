@@ -3,8 +3,9 @@ MrJPGames: Game
 Art:
 Julian van Leeuwen (most artwork)
 GrafxKid (2 Characters and 1 "Special" Object)
-Kenney (Menu Selector Graphic)
-matty_m (B button graphic) (Slightly modified by me)
+Kenney (Menu Selector Graphic, and Skull and Bones Object)
+matty_m (Gamepad Button graphic) (Slightly modified by me)
+fluxord (Crosshair graphic bottom screen during gameplay)
 
 Fonts:
 Google/Steve Matteson - Open Sans

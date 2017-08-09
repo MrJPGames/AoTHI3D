@@ -154,10 +154,8 @@ void spawnObject(float x, float y, bool isSpecial=false, int type=-1, float spee
 			else
 				objects[i].setSpeed(speed);
 			objects[i].setScale(0.75 + static_cast <float> (rand()) / static_cast <float> (RAND_MAX/0.5));
-			objects[i].setSpecial(isSpecial);
-			if (type != -1){
-				objects[i].setType(type);
-			}
+			if (isSpecial) objects[i].setSpecial(isSpecial);
+			if (type != -1)	objects[i].setType(type);
 			float xDiff = player.getX() - x;
 			float yDiff = player.getY() - y;
 			double angle=atan2(xDiff, -yDiff) * (180/PI);
@@ -405,7 +403,11 @@ int main(int argc, char **argv)
 	romfsInit();
 	//Initialize ndsp
 	ndspInit();
+	aptInit();
 
+	bool isNew=false;
+	APT_CheckNew3DS(&isNew);
+	
 	ndspSetOutputMode(NDSP_OUTPUT_STEREO);
 	ndspSetOutputCount(3); // Num of buffers
 	//Set the background color
@@ -423,6 +425,13 @@ int main(int argc, char **argv)
 	sf2d_texture *tex_selector = sfil_load_PNG_file("romfs:/menu/Selector.png", SF2D_PLACE_RAM);
 	sf2d_texture *tex_skin_selector = sfil_load_PNG_file("romfs:/menu/SkinSelector.png", SF2D_PLACE_RAM);
 	sf2d_texture *tex_back = sfil_load_PNG_file("romfs:/menu/Back.png", SF2D_PLACE_RAM);
+	sf2d_texture *tex_aim = sfil_load_PNG_file("romfs:/TouchAimHelp.png", SF2D_PLACE_RAM);
+	sf2d_texture *tex_controls;
+	if (isNew)
+		tex_controls = sfil_load_PNG_file("romfs:/menu/ControlsN3DS.png", SF2D_PLACE_RAM);
+	else
+		tex_controls = sfil_load_PNG_file("romfs:/menu/ControlsO3DS.png", SF2D_PLACE_RAM);
+
 	sftd_init();
 	sftd_font *font = sftd_load_font_mem(OpenSans_ttf, OpenSans_ttf_size);
 	sftd_draw_textf(font, 0, 0, RGBA8(255, 0, 0, 255), 50, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890:-.'!?()\"end"); //Hack to avoid blurry text!
@@ -622,6 +631,7 @@ int main(int argc, char **argv)
 				sftd_draw_textf(font, 10, 41, RGBA8(255,255,255,255), 12, "Current song: %s", songNames[cur_song_id].c_str());
 				//sftd_draw_textf(font, 10, 53, RGBA8(255,255,255,255), 12, "Free mem space: %i", linearSpaceFree());
 				sftd_draw_textf(font, 264, 5, RGBA8(255,255,255,255), 12, "FPS: %i", (int)round(sf2d_get_fps()) );
+				sf2d_draw_texture(tex_aim, 0, 0);
 			sf2d_end_frame();
 		}else if (state == 2){ //GameOver
 			sf2d_start_frame(GFX_TOP, GFX_LEFT);
@@ -672,6 +682,7 @@ int main(int argc, char **argv)
 						sftd_draw_text(font, 200, 130, RGBA8(255,255,255,255), 20, "Skins");
 						sftd_draw_text(font, 200, 150, RGBA8(255,255,255,255), 20, "Scoreboard");
 						sftd_draw_text(font, 200, 170, RGBA8(255,255,255,255), 20, "Online Leaderboard");
+						sftd_draw_text(font, 200, 190, RGBA8(255,255,255,255), 20, "Controls");
 					}
 					if (menustate == 2){
 						sf2d_draw_texture(tex_selector, 175, 95+20*selectedDificulty);
@@ -708,13 +719,41 @@ int main(int argc, char **argv)
 				}else if (menustate == 5){
 					sftd_draw_textf(font, 200-sftd_get_text_width(font, 20, "Failed to connect! Press B to exit.")/2,0,RGBA8(255,255,255,255),20,"Failed to connect! Press B to exit.");
 					sftd_draw_textf(font, 0, 50, RGBA8(255,255,255,255),20, online.getRawPageData().c_str() );
-				}else{
+				}else if (menustate == 6){
+					int xpos,ypos;
 					sftd_draw_textf(font, 200-sftd_get_text_width(font, 20, "Select a player skin:")/2,0,RGBA8(255,255,255,255),20,"Select a player skin:");
 					for (int i=0; i < tex_player->width/20; i++){
-						sf2d_draw_texture_part_scale(tex_player, 30+i*60, 50, i*20, 0, 20, 20, 2, 2);
+						if (i > 5){
+							xpos = i%6;
+							ypos = floor(i/6);
+						}else{
+							xpos = i;
+							ypos=0;
+						}
+						sf2d_draw_texture_part_scale(tex_player, 30+xpos*60, 50+52*ypos, i*20, 0, 20, 20, 2, 2);
 					}
-					sf2d_draw_texture_part_scale(tex_skin_selector, 26+player.getSkin()*60, 48, 24, 0, 24, 24, 2, 2);
-					sf2d_draw_texture_part_scale(tex_skin_selector, 26+selectedSubMenuOption*60, 48, 0, 0, 24, 24, 2, 2);
+					int i=player.getSkin();
+					if (i > 5){
+						xpos = i%6;
+						ypos = floor(i/6);
+					}else{
+						xpos = i;
+						ypos=0;
+					}
+					sf2d_draw_texture_part_scale(tex_skin_selector, 26+xpos*60, 46+52*ypos, 24, 0, 24, 24, 2, 2);
+					i=selectedSubMenuOption;
+					if (i > 5){
+						xpos = i%6;
+						ypos = floor(i/6);
+					}else{
+						xpos = i;
+						ypos=0;
+					}
+					sf2d_draw_texture_part_scale(tex_skin_selector, 26+xpos*60, 46+52*ypos, 0, 0, 24, 24, 2, 2);
+					sf2d_draw_texture(tex_back, 4, 212);
+				}else{
+					sftd_draw_textf(font, 200-sftd_get_text_width(font, 20, "Controls")/2,0,RGBA8(255,255,255,255),20,"Controls");
+					sf2d_draw_texture(tex_controls, 0, 0);
 					sf2d_draw_texture(tex_back, 4, 212);
 				}
 			sf2d_end_frame();
@@ -742,15 +781,17 @@ int main(int argc, char **argv)
 						case 3:
 							menustate = 4;
 							break;
+						case 4:
+							menustate = 7;
+							break;
 					}
 				}else if (menustate == 2){
 					state=1;
 					difficulty=selectedDificulty;
 					restart();
 				}else if (menustate == 6){
-					menustate=1;
 					player.setSkin(selectedSubMenuOption);
-					save.setPlayerSkin(selectedMenuOption);
+					save.setPlayerSkin(selectedSubMenuOption);
 					save.storeSaveData("/3ds/AoTSJSave.xml");
 				}
 			}
@@ -777,13 +818,13 @@ int main(int argc, char **argv)
 			if (menustate == 1){
 				if (kDown & KEY_DOWN){
 					selectedMenuOption++;
-					if (selectedMenuOption > 3)
+					if (selectedMenuOption > 4)
 						selectedMenuOption=0;
 				}
 				if (kDown & KEY_UP){
 					selectedMenuOption--;
 					if (selectedMenuOption < 0)
-						selectedMenuOption=3;
+						selectedMenuOption=4;
 				}
 			}
 		}
@@ -820,6 +861,22 @@ int main(int argc, char **argv)
 				if (selectedSubMenuOption >= tex_player->width/20)
 					selectedSubMenuOption=0;
 			}
+			if (kDown & KEY_DOWN){
+				selectedSubMenuOption+=6;
+				if (selectedSubMenuOption >= tex_player->width/20)
+					selectedSubMenuOption=selectedSubMenuOption%6;
+			}
+			if (kDown & KEY_UP){
+				selectedSubMenuOption-=6;
+				if (selectedSubMenuOption < 0){
+					int ypos, xpos;
+					xpos=6+selectedSubMenuOption;
+					ypos = ceil(tex_player->width/120);
+					selectedSubMenuOption=ypos*6+xpos;
+					if (selectedSubMenuOption >= tex_player->width/20)
+						selectedSubMenuOption=tex_player->width/20-1;
+				}
+			}
 		}
 		
 		if (kDown & KEY_START) break; // break in order to return to hbmenu
@@ -833,5 +890,6 @@ int main(int argc, char **argv)
 	sftd_fini();
 	sf2d_fini();
 	ndspExit();
+	aptExit();
 	return 0;
 }

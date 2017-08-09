@@ -4,8 +4,8 @@
 #define PI 3.14159265
 #define WIDTH 400
 #define HEIGHT 240
-#define TYPES 12
-#define SPECIALTYPES 2
+#define TYPES 17
+#define SPECIALTYPES 4
 
 Object::Object(){
 	isAlive=0;

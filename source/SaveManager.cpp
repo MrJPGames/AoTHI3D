@@ -14,7 +14,7 @@ void AoTSJSaveManager::loadSaveDataFromFile(string fileLocation){
 	u8 * outdata2 = (u8*)malloc(0x1C);
 	CFGU_GetConfigInfoBlk2 (0x1C, 0x000A0000, outdata);
 	utf16_to_utf8(outdata2,(u16*)outdata,0x1C);
-	string str((char*)outdata2, 0x1C);
+	string str((char*)outdata2, 0x1B);
 	localUsername = str;
 	free(outdata);
 	free(outdata2);
@@ -130,7 +130,6 @@ int AoTSJSaveManager::getItemsDestroyed(int dif){
 int AoTSJSaveManager::getPlayerSkin(){
 	return skin;
 }
- 
 
 string AoTSJSaveManager::getName(int dif){
 	return name[dif];

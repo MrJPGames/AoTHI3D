@@ -39,12 +39,12 @@ Result Online::getLeaderboard(){
         s.erase ( s.find (" "), 1 );
     }
 
-	string url = (string)"http://poc.debug-it.nl/AoTSJ/?uploadScore=1&country=1&id=" + to_string(hash) + (string)"&xml=" + s;
+	string url = (string)"http://poc.debug-it.nl/AoTSJ/?uploadScore=1&country_id=" + countryInfo[4] + (string)"&id=" + to_string(hash) + (string)"&xml=" + s;
 
 	getStringFromURL(url.c_str(), false);
 	string ret = getStringFromURL("http://poc.debug-it.nl/AoTSJ/?getLeaderboard=1", true);
 	if (ret == "Successful"){
-		loadStatsFromFile("/3ds/AoTSJonlinestats.xml");
+		//loadStatsFromFile("/3ds/AoTSJonlinestats.xml");
 		loaded=true;
 		return 0;
 	}else{
@@ -72,7 +72,7 @@ string Online::getStringFromURL(const char* url, bool toPageData){
 		// gfxFlushBuffers();
 
 		// Set a User-Agent header so websites can identify your application
-		ret = httpcAddRequestHeaderField(&context, "User-Agent", "httpc-example/1.0.0");
+		ret = httpcAddRequestHeaderField(&context, "User-Agent", "AoTSJClient/1.0.0");
 
 		// Tell the server we can support Keep-Alive connections.
 		// This will delay connection teardown momentarily (typically 5s)
@@ -161,14 +161,29 @@ string Online::getStringFromURL(const char* url, bool toPageData){
 	}
 
 	if (toPageData){
-		XMLDocument xml_doc;
+		XMLDocument doc;
 
-		string result((char*)buf, size);
-		pageData=result;
+		doc.Parse( (char*)buf, size);
+		XMLNode * root = doc.LastChild();
+		if (root != nullptr){
+			pageCount=0;
+			pageLines=0;
 
-		xml_doc.Parse( (char*)buf, size);
-
-		xml_doc.SaveFile("/3ds/AoTSJonlinestats.xml");
+			int i=0, j;
+			for (XMLNode * node = root->FirstChild(); node != nullptr; node = node->NextSibling()){
+				j=1;
+				pages[i][0] = node->FirstChildElement("title")->GetText();
+				for (XMLElement * item_element = node->FirstChildElement("item0"); item_element != nullptr; item_element = item_element->NextSiblingElement()){
+					//NOTE: might have to be node->FirstChildElement("item0")!
+					pages[i][j] = item_element->GetText();
+					if (j > pageLines)
+						pageLines=j;
+					j++;
+				}
+				i++;
+				pageCount++;
+			}
+		}
 	}
 
 
@@ -177,37 +192,12 @@ string Online::getStringFromURL(const char* url, bool toPageData){
 	free(buf);
 	if (newurl!=NULL) free(newurl);
 
+
+
+	printf("End of DL function\n");
+	gfxFlushBuffers();
+	gfxSwapBuffers();
 	return "Successful";
-}
-
-void Online::loadStatsFromFile(string fileLocation){
-	std::ifstream t(fileLocation);
-	std::stringstream buffer;
-	buffer << t.rdbuf();
-
-	XMLDocument doc;
-
-	doc.Parse( pageData.c_str() );
-
-	XMLNode * root = doc.LastChild();
-	if (root != nullptr){
-		pageCount=0;
-		pageLines=0;
-
-		int i=0, j;
-		for (XMLNode * node = root->FirstChild(); node != nullptr; node = node->NextSibling()){
-			j=1;
-			pages[i][0] = node->FirstChildElement("title")->GetText();
-			for (XMLElement * item_element = node->FirstChildElement("item0"); item_element != nullptr; item_element = item_element->NextSiblingElement()){
-				pages[i][j] = item_element->GetText();
-				if (j > pageLines)
-					pageLines=j;
-				j++;
-			}
-			i++;
-			pageCount++;
-		}
-	}
 }
 
 bool Online::isLoaded(){
