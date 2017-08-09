@@ -192,11 +192,6 @@ string Online::getStringFromURL(const char* url, bool toPageData){
 	free(buf);
 	if (newurl!=NULL) free(newurl);
 
-
-
-	printf("End of DL function\n");
-	gfxFlushBuffers();
-	gfxSwapBuffers();
 	return "Successful";
 }
 
