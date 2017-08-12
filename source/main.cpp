@@ -426,6 +426,7 @@ int main(int argc, char **argv)
 	sf2d_texture *tex_skin_selector = sfil_load_PNG_file("romfs:/menu/SkinSelector.png", SF2D_PLACE_RAM);
 	sf2d_texture *tex_back = sfil_load_PNG_file("romfs:/menu/Back.png", SF2D_PLACE_RAM);
 	sf2d_texture *tex_aim = sfil_load_PNG_file("romfs:/TouchAimHelp.png", SF2D_PLACE_RAM);
+	sf2d_texture *tex_arrows = sfil_load_PNG_file("romfs:/menu/Arrows.png", SF2D_PLACE_RAM);
 	sf2d_texture *tex_controls;
 	if (isNew)
 		tex_controls = sfil_load_PNG_file("romfs:/menu/ControlsN3DS.png", SF2D_PLACE_RAM);
@@ -646,7 +647,7 @@ int main(int argc, char **argv)
 				sftd_draw_text(font, 50, 160, RGBA8(255,255,255,255), 20, "Retry");
 				sftd_draw_text(font, 50, 180, RGBA8(255,255,255,255), 20, "Change Difficulty");
 				sftd_draw_text(font, 50, 200, RGBA8(255,255,255,255), 20, "Menu");
-				sf2d_draw_texture(tex_selector, 25, 160+20*goSelected);
+				sf2d_draw_texture(tex_selector, 25, 163+20*goSelected);
 			sf2d_end_frame();
 				
 			sf2d_start_frame(GFX_BOTTOM, GFX_LEFT);
@@ -684,7 +685,7 @@ int main(int argc, char **argv)
 					}
 					if (menustate == 1){
 						sf2d_draw_texture(tex_menu_logo, 150, 30);
-						sf2d_draw_texture(tex_selector, 175, 110+20*selectedMenuOption);
+						sf2d_draw_texture(tex_selector, 175, 113+20*selectedMenuOption);
 						sftd_draw_text(font, 200, 110, RGBA8(255,255,255,255), 20, "Play");
 						sftd_draw_text(font, 200, 130, RGBA8(255,255,255,255), 20, "Skins");
 						sftd_draw_text(font, 200, 150, RGBA8(255,255,255,255), 20, "Scoreboard");
@@ -692,15 +693,15 @@ int main(int argc, char **argv)
 						sftd_draw_text(font, 200, 190, RGBA8(255,255,255,255), 20, "Controls");
 					}
 					if (menustate == 2){
-						sf2d_draw_texture(tex_selector, 175, 90+20*selectedDificulty);
+						sf2d_draw_texture(tex_selector, 175, 93+20*selectedDificulty);
 						sftd_draw_text(font, 150, 50, RGBA8(255,255,255,255), 25, "Difficulty Select:");
 						sftd_draw_text(font, 200, 90, RGBA8(255,255,255,255), 20, "Normal");
 						sftd_draw_text(font, 200, 110, RGBA8(255,255,255,255), 20, "Hard");
 						sftd_draw_text(font, 200, 130, RGBA8(255,255,255,255), 20, "Insane");
 					}
 				}else if (menustate == 3){
-					sftd_draw_text(font, 20, 20, RGBA8(255,255,255,255), 20,  "<-");
-					sftd_draw_text(font, 380-sftd_get_text_width(font, 20, "->"), 20, RGBA8(255,255,255,255), 20,  "->");
+					sf2d_draw_texture_part(tex_arrows, 20, 25, 0, 0, 14, 10);
+					sf2d_draw_texture_part(tex_arrows, 366, 25, 14, 0, 14, 10);
 					if (highScoreState == 0){
 						sftd_draw_text(font, 200-sftd_get_text_width(font, 20, "High Scores")/2, 20, RGBA8(255,255,255,255), 20,  "High Scores");
 						sftd_draw_textf(font, 30, 50, RGBA8(255,255,255,255), 18, "Normal: %i\nHard: %i\nInsane: %i\n", save.getScore(0), save.getScore(1), save.getScore(2));
@@ -718,8 +719,8 @@ int main(int argc, char **argv)
 							menustate = 5;
 						}
 					}
-					sftd_draw_text(font, 20, 10, RGBA8(255,255,255,255), 20,  "<-");
-					sftd_draw_text(font, 380-sftd_get_text_width(font, 20, "->"), 10, RGBA8(255,255,255,255), 20,  "->");
+					sf2d_draw_texture_part(tex_arrows, 20, 20, 0, 0, 14, 10);
+					sf2d_draw_texture_part(tex_arrows, 366, 20, 14, 0, 14, 10);
 					sftd_draw_text(font, 200-sftd_get_text_width(font, 20, online.getPageData(curPage,0).c_str())/2, 10, RGBA8(255,255,255,255), 20,  online.getPageData(curPage,0).c_str());
 					for (int i=0; i < online.getPageLines(); i++){
 						sftd_draw_textf(font, 20,35+20*i,RGBA8(255,255,255,255),20,"%s", online.getPageData(curPage,i+1).c_str());

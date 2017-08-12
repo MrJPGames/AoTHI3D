@@ -5,6 +5,13 @@
 using namespace tinyxml2;
 using namespace std;
 
+struct CountryInfo {
+	uint8_t unknown1;
+	uint8_t unknown2;
+	uint8_t state;
+	uint8_t country;
+} countryInfo;
+
 Online::Online(){
 	httpcInit(0);
 }
@@ -17,6 +24,13 @@ Result Online::getLeaderboard(){
 	cfguInit();
 	u64 hash;
 	CFGU_GenHashConsoleUnique(0x1337, &hash);
+
+	u8 * outdata = (u8*)malloc(0x4);
+	CFGU_GetConfigInfoBlk2 (0x4, 0x000B0000, outdata);
+	CountryInfo countryData;
+	memcpy(&countryData, outdata, 0x4);
+	int countryID = (int)countryData.country;
+	free(outdata);
 
 	cfguExit();
 
@@ -31,7 +45,7 @@ Result Online::getLeaderboard(){
         s.erase ( s.find (" "), 1 );
     }
 
-	string url = (string)"http://poc.debug-it.nl/AoTSJ/?uploadScore=1&id=" + to_string(hash) + (string)"&xml=" + s;
+	string url = (string)"http://poc.debug-it.nl/AoTSJ/?uploadScore=1&id=" + to_string(hash) + "&country_id=" + to_string(countryID) + (string)"&xml=" + s;
 
 	getStringFromURL(url.c_str(), false);
 	url="http://poc.debug-it.nl/AoTSJ/?getLeaderboard=1&id=" + to_string(hash);

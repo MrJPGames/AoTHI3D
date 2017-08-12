@@ -4,8 +4,8 @@
 #define PI 3.14159265
 #define WIDTH 400
 #define HEIGHT 240
-#define TYPES 18
-#define SPECIALTYPES 4
+#define TYPES 26
+#define SPECIALTYPES 10
 
 Object::Object(){
 	isAlive=0;
@@ -18,7 +18,7 @@ Object::Object(){
 	rot_dir=1;
 	special=0;
 	type = rand() % TYPES;
-	if ((rand() % 200) == 42){ //Special item!
+	if ((rand() % 100) == 42){ //Special item!
 		type = rand() % SPECIALTYPES;
 		special=1;
 	}
@@ -33,7 +33,7 @@ void Object::kill(){
 	rot_dir=-rot_dir;
 	special=0;
 	type = rand() % TYPES;
-	if ((rand() % 200) == 42){ //Special item!
+	if ((rand() % 100) == 42){ //Special item!
 		type = rand() % SPECIALTYPES;
 		special=1;
 	}
