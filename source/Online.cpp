@@ -46,10 +46,10 @@ Result Online::getLeaderboard(){
     }
 
 	string url = (string)"http://poc.debug-it.nl/AoTSJ/?uploadScore=1&id=" + to_string(hash) + "&country_id=" + to_string(countryID) + (string)"&xml=" + s;
-
 	getStringFromURL(url.c_str(), false);
 	url="http://poc.debug-it.nl/AoTSJ/?getLeaderboard=1&id=" + to_string(hash);
 	string ret = getStringFromURL(url.c_str(), true);
+
 	if (ret == "Successful"){
 		loaded=true;
 		return 0;
@@ -174,7 +174,6 @@ string Online::getStringFromURL(const char* url, bool toPageData){
 		if (root != nullptr){
 			pageCount=0;
 			pageLines=0;
-
 			int i=0, j;
 			for (XMLNode * node = root->FirstChild(); node != nullptr; node = node->NextSibling()){
 				j=1;

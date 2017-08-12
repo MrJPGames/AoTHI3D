@@ -32,10 +32,10 @@ using namespace std;
 
 Player player;
 
-Bullet bullets[30]; //Never more than ~15 on screen during normal gameplay (power-ups might change that)
-Object objects[50]; //Never 50 (~25 max) but HAS to be possible (easier to implement harder difficulties!)
+Bullet bullets[MAX_BULLET]; //Never more than ~15 on screen during normal gameplay (power-ups might change that)
+Object objects[MAX_OBJECT]; //Never 50 (~25 max) but HAS to be possible (easier to implement harder difficulties!)
 NewEffect new_effects[MAX_NEW_EFFECT]; //Way more needed than old effect
-Trail bullet_trails[200]; //Max on screen ~190
+Trail bullet_trails[MAX_TRAIL]; //Max on screen ~190
 
 circlePosition cpos;
 circlePosition cstick;
@@ -91,14 +91,17 @@ bool newItemsDestoryedScore=false;
 
 void restart(){
 	int x;
-	for (x=0;x<30;x++){
+	for (x=0;x<MAX_BULLET;x++){
 		bullets[x].kill();
 	}
-	for (x=0;x<50;x++){
+	for (x=0;x<MAX_OBJECT;x++){
 		objects[x].kill();
 	}
 	for (x=0;x<MAX_NEW_EFFECT;x++){
 		new_effects[x].kill();
+	}
+	for (x=0;x<MAX_TRAIL;x++){
+		bullet_trails[x].kill();
 	}
 	player.setPos(200,120);
 	canShoot=1;
@@ -141,6 +144,22 @@ void restart(){
 		bgm.initSong(songFileName[new_song_id].c_str());
 		cur_song_id=new_song_id;
 		bgm.play();
+	}
+}
+
+void killObjects(){
+	int x;
+	for (x=0;x<MAX_BULLET;x++){
+		bullets[x].kill();
+	}
+	for (x=0;x<MAX_OBJECT;x++){
+		objects[x].kill();
+	}
+	for (x=0;x<MAX_NEW_EFFECT;x++){
+		new_effects[x].kill();
+	}
+	for (x=0;x<MAX_TRAIL;x++){
+		bullet_trails[x].kill();
 	}
 }
 
@@ -348,8 +367,10 @@ void update(){
 								save.setItemsDestroyed(difficulty, itemsDestroyed);
 								newItemsDestoryedScore=true;
 							}
-							if (newHighScore || newItemsDestoryedScore)
+							if (newHighScore || newItemsDestoryedScore){
+								killObjects();
 								save.storeSaveData("/3ds/AoTSJSave.xml");
+							}
 							state=2;
 						}else{
 							player.setInvincible(120);
@@ -591,15 +612,15 @@ int main(int argc, char **argv)
 				sf2d_draw_texture(tex_bg, 0, 0);
 				int x;
 				int tempDamageColChangeValue=0;
-				for (x=0; x < 200; x++){
+				for (x=0; x < MAX_TRAIL; x++){
 					if (bullet_trails[x].getAlive())
 						sf2d_draw_texture_rotate_blend(tex_trail, bullet_trails[x].getX(), bullet_trails[x].getY(), bullet_trails[x].getRot(), RGBA8(255,255,255,bullet_trails[x].getAlpha()));
 				}
-				for (x=0; x < 30; x++){
+				for (x=0; x < MAX_BULLET; x++){
 					if (bullets[x].getAlive())
 						sf2d_draw_texture_part_rotate_scale(tex_bullet, round(bullets[x].getX()), round(bullets[x].getY()), bullets[x].getAngleInRads(), bullets[x].getType()*8, 0, 8, 8, 1, 1);
 				}
-				for (x=0; x < 50; x++){
+				for (x=0; x < MAX_OBJECT; x++){
 					if (objects[x].getAlive())
 						sf2d_draw_texture_part_rotate_scale(tex_object, round(objects[x].getX()), round(objects[x].getY()), objects[x].getAngle(), 32*objects[x].getType(), 32*objects[x].isSpecial(), 32, 32, objects[x].getScale(), objects[x].getScale());
 				}
