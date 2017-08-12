@@ -193,7 +193,7 @@ void spawnObject(float x, float y, bool isSpecial=false, int type=-1, float spee
 }
 
 void spawn(int side){
-	int x,y;
+	int x=200,y=120; //Very clear if spawn is incorrect
 	switch(side){
 		case 0:
 			x=rand() % 400;
@@ -201,7 +201,7 @@ void spawn(int side){
 			break;
 		case 1:
 			x=rand() % 400;
-			y=282;
+			y=272;
 			break;
 		case 2:
 			x=-32;
@@ -210,10 +210,6 @@ void spawn(int side){
 		case 3:
 			x=432;
 			y=rand() % 240;
-			break;
-		default:
-			x=0;
-			y=0;
 			break;
 	}
 	spawnObject(x,y);

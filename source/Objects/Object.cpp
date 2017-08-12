@@ -64,14 +64,14 @@ void Object::update(){
 	y-=speed*cos(direction*(PI/180));
 	x+=speed*sin(direction*(PI/180));
 	angle+=2*PI/180;
-	if (x > WIDTH+32){
+	if (x > WIDTH+64){
 		kill();
-	}else if (x < -32){
+	}else if (x < -64){
 		kill();
 	}
-	if (y > HEIGHT+32){
+	if (y > HEIGHT+64){
 		kill();
-	}else if (y < -32){
+	}else if (y < -64){
 		kill();	
 	}
 }
